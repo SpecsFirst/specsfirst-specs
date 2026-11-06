@@ -1,7 +1,7 @@
 ---
 id: TASK-001
 title: Registry and validation Action
-status: open             # open | in_progress | blocked | done | needs_review | rejected
+status: done             # open | in_progress | blocked | done | needs_review | rejected
 parent: subrepos/gallery/main.md
 subrepo: gallery
 issue:
@@ -145,32 +145,41 @@ returns: the branch with its commits, and the filled Result section
 
 ### Outcome
 
-(Attempt #1, see Attempts for the corrections.) Implemented the full TASK-001 on branch `task/001-registry-validation` (commit
-`673e5d7`). The gallery Python project (src layout, Python 3.12, uv, package
-`gallery`) ships:
+(Attempt #2, fixes for the five review defects, commit `9c9987c`.) The full
+TASK-001 implementation from attempt #1 (commit `673e5d7`/`0a47ce1`) stands, and
+now also passes the stricter review:
 
-- `src/gallery/registry.py`: typed `Taxonomy`/`Tag`/`Group`/`Entry`/`Registry`
-  model. Exposes kinds, active tags with descriptions, groups in file order,
-  active tags in no group, and `resolve_tag(name)` that follows `replaced_by`
-  to the active end (returns `None` for unknown / broken / cyclic chains).
-  `load_entry` reads the entry id from the file name, exposes the schema's
-  fields (nothing hard-coded outside schema/taxonomy), and the default language
-  comes from the schema's `language.default` (falls back to `en`).
-- `src/gallery/validate.py`: `python -m gallery.validate [--root DIR]` checks
-  every `templates/` file and the taxonomy, reports ALL errors/warnings (not
-  just the first), naming file and field. Covers every required entry and
-  taxonomy error. Deprecated-tag warnings keep exit 0 and name the replacement.
-  With `GITHUB_ACTIONS=true` emits `::error`/`::warning` annotations with
-  values escaped (`%`→`%25`, CR→`%0D`, LF→`%0A`). Exit 0 valid, 1 otherwise.
-- `.github/workflows/validate.yml`: runs on `pull_request` (not
-  `pull_request_target`) and on push to main, `permissions: contents: read`,
-  `actions/checkout@v4`, `astral-sh/setup-uv@v5`,
-  `actions/setup-python@v5` with `.python-version`, then `uv sync --frozen`,
-  `uv run pytest`, `uv run ruff check .`, `uv run python -m gallery.validate`.
+1. **No traceback, ever.** `validate` reports errors and keeps checking the other
+   files instead of crashing on: `kind` as a list, a tag item as a list, `url` as
+   a number, `url: https://[bad`, `path` as a number, a non-UTF-8 file, a broken
+   or missing schema file, and a missing taxonomy file. `registry.load_*` now
+   turn unreadable (`OSError`) and non-UTF-8 (`UnicodeDecodeError`) files, plus
+   missing taxonomy/schema, into `RegistryError`; `validate` handles `schema=None`
+   (defaults language to `en`). Non-string `kind`/`tag`/`url`/`path`/`ref` are
+   guarded before the extra checks run (the schema still reports the type error).
+2. **Taxonomy structure.** `load_taxonomy` now rejects: a group whose value is not
+   a list, a missing `kinds` or `tags` key, and a `replaced_by` that is not a
+   string. Each exits 1.
+3. **Workflow command injection.** Every printed issue stays on one line; CR/LF are
+   neutralized in the plain line (`\r`→`\\r`, `\n`→`\\n`) as well as escaped in the
+   annotation. A file named `b\n::notice::x\n.yml` no longer starts a `::notice::`
+   command.
+4. **Annotation property.** The `file=` property escapes `:`→`%3A` and `,`→`%2C`
+   (plus `%`, CR, LF) and paths are relative to the root. `templates/a,line:9.yml`
+   no longer injects a property.
+5. **Files in templates/.** A subfolder is now an error. A symlink is an error and
+   is **never read**, by `validate` or by `registry.load_registry` (both skip
+   symlinks), so a link to a file outside the registry leaks nothing.
 
-All checks green: 34 tests pass, ruff clean, `gallery.validate` exits 0 on the
-real registry (the two entries pass), actionlint clean, and
-`git diff --exit-code main -- taxonomy.yml schema templates` is empty.
+All checks green: 59 tests pass (25 new regression tests, verified to fail on the
+old code and pass after), ruff clean, `gallery.validate` exits 0 on the real
+registry (the two entries pass), actionlint clean, and
+`git diff --exit-code main -- taxonomy.yml schema templates` is empty (read-only
+inputs untouched).
+
+> Orchestrator note: the commit is `83c9f84` after stamping. Review replayed every case of the
+> Attempts list by hand and found none left, then merged TASK-001, 002 and 003 on a temporary
+> branch: 201 tests pass, and validate, detect and build run on the real registry.
 
 ### Artifacts produced
 
@@ -181,18 +190,27 @@ real registry (the two entries pass), actionlint clean, and
 
 ### Opinion / concerns
 
-- The taxonomy structural checks (`kinds`/`tags`/`groups` not a mapping, a tag
-  that is neither a string nor a mapping) are reported as a single
-  `RegistryError` from `registry.load_taxonomy`, caught by validate. The
-  well-formed real taxonomy gets the full semantic checks (group/tag, replaced_by
-  target, cycle); a structurally broken taxonomy cannot be partially walked, so
-  it yields one error rather than several. Acceptable given the real file is
-  stable and read-only.
-- `resolve_tag` follows the chain to the active end; the deprecated-tag warning
-  names the immediate `replaced_by` (matches "names its replacement").
-- The validate workflow uses `uv sync --frozen`, consistent with committing
-  `uv.lock`.
+- A structurally broken taxonomy yields a single `RegistryError` from
+  `load_taxonomy` (one Issue) rather than several, because a malformed mapping
+  cannot be partially walked. Acceptable given the real file is stable and
+  read-only.
+- The plain-line output neutralizes CR/LF to the two-char `\n`/`\r` literals so
+  the log stays greppable and single-line; annotations use the GitHub-native
+  `%0D`/`%0A` forms.
+- `load_registry` silently skips symlinks/directories (never reads them) rather
+  than erroring, matching "never read"; erroring on them is `validate`'s job.
+- The taxonomy structure errors and message paths use root-relative file names in
+  issues; the taxonomy read still happens against the absolute path internally.
 
 ### CLARIFICATION NEEDED
 
 None.
+
+---
+
+## Attempts (continued)
+
+- 2026-11-06 #2: all five review defects fixed on `task/001-registry-validation`
+  (commit `9c9987c`), each with a regression test verified to fail on the old
+  code and pass after. See the outcome below.
+
