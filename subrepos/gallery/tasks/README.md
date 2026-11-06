@@ -18,7 +18,7 @@ Index and global status of all tasks. Each task is one file:
 |------|-------|--------|------------|
 | TASK-001 | Registry and validation Action | in_progress | — |
 | TASK-002 | Detect template information safely | done | TASK-001 |
-| TASK-003 | Static site | in_progress | TASK-001 |
+| TASK-003 | Static site | done | TASK-001 |
 
 ## Backlog
 

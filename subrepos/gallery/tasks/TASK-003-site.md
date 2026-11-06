@@ -1,7 +1,7 @@
 ---
 id: TASK-003
 title: Static site
-status: open             # open | in_progress | blocked | done | needs_review | rejected
+status: needs_review          # open | in_progress | blocked | done | needs_review | rejected
 parent: subrepos/gallery/main.md
 subrepo: gallery
 issue:
@@ -168,6 +168,12 @@ returns: the branch with its commit(s), and the filled Result section
 
 > Filled in by the orchestrator, one line per (re)launch.
 
+- 2026-11-06 #1: done. Browser review in headless Chromium, on the real data and on a hostile
+  fixture: 33/33 checks (filters, sort, URL state, no JS, 320 px, hostile values, copy button,
+  giscus under the CSP with no violation). The orchestrator fixed layout defects in a separate
+  commit: filters pushed the templates far down, doubled title, doubled Repository label, facts
+  misaligned on cards. Filters are now collapsed on narrow screens unless a link sets them.
+
 ## Result
 
 > Filled in by the executor, **always**, even on failure: set `status` to
@@ -175,8 +181,96 @@ returns: the branch with its commit(s), and the filled Result section
 
 ### Outcome
 
+Done, commit `ee0566c` on branch `task/003-site` (worktree
+`/home/omni/specfirst/.worktrees/gallery-site`), one commit on top of `0a47ce1`.
+`python -m gallery.build [--root DIR] [--detected FILE] [--votes FILE] --output DIR`
+writes `index.html`, `templates/<id>/index.html`, `assets/site.css`, `assets/site.js`,
+`.nojekyll` and a byte-identical `schema/template.schema.json`.
+
+Checks actually run, in the worktree:
+
+- `uv sync`, `uv lock --check`: ok. Dependencies added: `jinja2`, `markdown-it-py` only.
+- `uv run pytest`: 94 passed (37 of them new, in `tests/test_build.py`, HTML parsed with
+  `html.parser`).
+- `uv run ruff check .`: all checks passed.
+- `uv run python -m gallery.build --detected <provided detected.json> --output
+  tasks/.exchange/tmp/task-003/out`: exit 0, 2 template pages. Also run with a sample
+  `votes.json` (`out2/`): the voted template moves first.
+- Mutation check of the security tests: with autoescape off, raw HTML on, the
+  sanitizer removed, images left on, or the `https` check removed on the repo link,
+  the test suite fails each time (5, 2, 4, 3 and 1 failures); restored afterwards.
+- JavaScript: parsed with esprima (syntax ok), and run in QuickJS against a hand-made
+  DOM stub (scratch `tasks/.exchange/tmp/task-003/jssmoke.py`, not committed, not a
+  browser): default order, sort by update with missing dates last, kind plus several
+  tags (ALL), URL query read on load and written on change, empty message and clear,
+  unknown query values ignored, copy button. All asserted and passing.
+- Colour contrast computed for every text/background pair in both schemes: text >= 6.3:1,
+  chips >= 9:1, accent links >= 7:1; focus ring >= 4.4:1; form-control border >= 4.8:1.
+
+NOT verified (no browser available): real rendering and 320 px layout, the JS in a real
+browser, and that giscus works under the CSP (see Opinion).
+
+Design choices to know about:
+
+- `--root` is the registry root. `site/` and `site.yml` are read from `--root` when they
+  exist there, else from the repo that holds `gallery.build` (so tests with a tmp
+  registry use the real templates and config).
+- Links: `templates/<id>/` and `../../` (directory links, no `index.html`), assets
+  `assets/...` / `../../assets/...`. No `<base>`.
+- Filter state in the URL: `?kind=<k>&tag=<t>&tag=<t>&sort=updated` (`sort=votes` is the
+  default and omitted); written with `history.replaceState`.
+- Card filter data is `data-kind`, `data-tags` (JSON array of resolved tags), `data-votes`,
+  `data-updated` (epoch seconds, empty when unknown), `data-name` (casefolded), `data-id`.
+  Order is votes desc, then casefolded name, then id; same comparator in Python and JS.
+- Copier command values are shell-quoted (`shlex.quote`), and no command is shown if the
+  url is not plain https or the ref starts with `-` or the path is absolute or has `..`.
+  Beyond the contract, as defence in depth (entries are strangers' values).
+- Entries whose id does not match the id pattern are skipped with a stderr warning (an id
+  becomes a directory name). An unparseable data file is a `BuildError` (exit 1); only a
+  missing file is "no data".
+- Failed templates: the `error` code is mapped to plain words through the closed list
+  (`timeout`, `too_large`, `unreachable`, `ref_not_found`, `path_not_found`,
+  `invalid_entry`); any other value, and the code itself, is never displayed.
+- Preview headings are shifted down two levels (h1 becomes h3) so the page keeps one h1;
+  tables sit in a scrolling `div`; `style` attributes of table cells are dropped.
+  `markdown-it`'s `validateLink` is bypassed so that a refused link keeps its text
+  instead of showing its markdown source.
+- Tags unknown to the taxonomy are shown as written and are not filterable.
+- The label "Other" for ungrouped tags is in `build.py` (the contract fixes it).
+- The two copies of "Submit a template" link to
+  `https://github.com/<giscus.repo from site.yml>/blob/main/CONTRIBUTING.md`.
+
 ### Artifacts produced
+
+- `src/gallery/build.py`
+- `site/base.html`, `site/index.html`, `site/template.html`, `site/assets/site.css`,
+  `site/assets/site.js`
+- `site.yml`
+- `tests/test_build.py`
+- `pyproject.toml`, `uv.lock` (two dependencies)
+- scratch, not committed: `tasks/.exchange/tmp/task-003/out/`, `out2/`, `votes.json`,
+  `jssmoke.py`
 
 ### Opinion / concerns
 
+- CSP and giscus: `style-src 'self' https://giscus.app` and no `'unsafe-inline'`, as the
+  contract says. If giscus' `client.js` sets inline styles or injects a `<style>`, the
+  browser will block that and the thread may look unstyled. This is the first thing to
+  check in the browser at review; if it breaks, the fix is one directive in
+  `site/base.html`.
+- The preview of a repo is only text-styled: image alt text appears inline with no
+  marker, so a README that is mostly badges reads as stray words. Acceptable per the
+  contract, worth knowing.
+- `lstrip_blocks`/`trim_blocks` leave a few odd blank lines in the generated HTML around
+  inline `{% if %}` in the cards. Cosmetic only.
+- The `title` attribute is the only place the taxonomy descriptions appear on filters (the
+  contract allows it); it is poorly exposed on touch devices. A visible help line would
+  be a small follow-up if wanted.
+- `.gitignore` was not changed: the build writes only to `--output`, so nothing needed
+  ignoring.
+- The environment header of my session named `.worktrees/gallery-detect` as primary
+  directory; I worked only in `.worktrees/gallery-site` as the task says.
+
 ### CLARIFICATION NEEDED
+
+None.
