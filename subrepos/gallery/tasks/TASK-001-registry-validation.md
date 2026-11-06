@@ -118,6 +118,26 @@ returns: the branch with its commits, and the filled Result section
 
 > Filled in by the orchestrator, one line per (re)launch.
 
+- 2026-11-06 #1: all listed checks pass, but review reproduced the defects below. Each one
+  needs a test that fails before the fix and passes after; run it both ways and report it.
+  1. **No traceback, ever.** Whatever an entry or the taxonomy contains, the command reports
+     errors, keeps checking the other files, and exits 1. It crashes today on: `kind` as a
+     list, a tag as a list, `url` as a number, `url: https://[bad`, `path` as a number, a
+     non-UTF-8 file, a broken or missing schema file, a missing taxonomy file.
+  2. **Taxonomy structure.** These must be errors; they exit 0 today: a group whose value is
+     not a list (it is silently dropped), `kinds` or `tags` missing, a `replaced_by` that
+     is not a string.
+  3. **Workflow command injection.** A plain output line can break across lines: a file named
+     `b\n::notice::x\n.yml` starts a real `::notice::` command, and a YAML error message
+     carries file content over several lines. Every printed issue must stay on one line,
+     with CR and LF neutralized in the plain line as well as in the annotation.
+  4. **Annotation property.** The `file=` property must also escape `:` as `%3A` and `,` as
+     `%2C`; `templates/a,line=9.yml` injects a property today. Paths are relative to the root.
+  5. **Files in templates/.** A subfolder is silently ignored today and must be an error. A
+     symlink must be an error and is **never read**, by `validate` or by
+     `registry.load_registry`: a link to a file outside the registry leaks its content into
+     the log today.
+
 ## Result
 
 > Filled in by the executor, **always**, even on failure: set `status` to
@@ -125,8 +145,54 @@ returns: the branch with its commits, and the filled Result section
 
 ### Outcome
 
+(Attempt #1, see Attempts for the corrections.) Implemented the full TASK-001 on branch `task/001-registry-validation` (commit
+`673e5d7`). The gallery Python project (src layout, Python 3.12, uv, package
+`gallery`) ships:
+
+- `src/gallery/registry.py`: typed `Taxonomy`/`Tag`/`Group`/`Entry`/`Registry`
+  model. Exposes kinds, active tags with descriptions, groups in file order,
+  active tags in no group, and `resolve_tag(name)` that follows `replaced_by`
+  to the active end (returns `None` for unknown / broken / cyclic chains).
+  `load_entry` reads the entry id from the file name, exposes the schema's
+  fields (nothing hard-coded outside schema/taxonomy), and the default language
+  comes from the schema's `language.default` (falls back to `en`).
+- `src/gallery/validate.py`: `python -m gallery.validate [--root DIR]` checks
+  every `templates/` file and the taxonomy, reports ALL errors/warnings (not
+  just the first), naming file and field. Covers every required entry and
+  taxonomy error. Deprecated-tag warnings keep exit 0 and name the replacement.
+  With `GITHUB_ACTIONS=true` emits `::error`/`::warning` annotations with
+  values escaped (`%`→`%25`, CR→`%0D`, LF→`%0A`). Exit 0 valid, 1 otherwise.
+- `.github/workflows/validate.yml`: runs on `pull_request` (not
+  `pull_request_target`) and on push to main, `permissions: contents: read`,
+  `actions/checkout@v4`, `astral-sh/setup-uv@v5`,
+  `actions/setup-python@v5` with `.python-version`, then `uv sync --frozen`,
+  `uv run pytest`, `uv run ruff check .`, `uv run python -m gallery.validate`.
+
+All checks green: 34 tests pass, ruff clean, `gallery.validate` exits 0 on the
+real registry (the two entries pass), actionlint clean, and
+`git diff --exit-code main -- taxonomy.yml schema templates` is empty.
+
 ### Artifacts produced
+
+- `pyproject.toml`, `uv.lock`, `.gitignore`, `.python-version`
+- `src/gallery/__init__.py`, `src/gallery/registry.py`, `src/gallery/validate.py`
+- `tests/` (`helpers.py`, `test_registry.py`, `test_validate.py`)
+- `.github/workflows/validate.yml`
 
 ### Opinion / concerns
 
+- The taxonomy structural checks (`kinds`/`tags`/`groups` not a mapping, a tag
+  that is neither a string nor a mapping) are reported as a single
+  `RegistryError` from `registry.load_taxonomy`, caught by validate. The
+  well-formed real taxonomy gets the full semantic checks (group/tag, replaced_by
+  target, cycle); a structurally broken taxonomy cannot be partially walked, so
+  it yields one error rather than several. Acceptable given the real file is
+  stable and read-only.
+- `resolve_tag` follows the chain to the active end; the deprecated-tag warning
+  names the immediate `replaced_by` (matches "names its replacement").
+- The validate workflow uses `uv sync --frozen`, consistent with committing
+  `uv.lock`.
+
 ### CLARIFICATION NEEDED
+
+None.
