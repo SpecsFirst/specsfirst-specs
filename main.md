@@ -43,11 +43,15 @@ gallery is served at <https://specsfirst.github.io/gallery/>.
 - `https://github.com/SpecsFirst/template-research-thesis`, listed by the entry
   `research-thesis.yml`, does not exist yet and must be created. Until it does,
   this entry stays in the "clone failed" state and shows only its own fields. Its
-  license and content are still to be decided.
+  content is still to be decided.
 
 ## Decisions
 
 - 2026-11-06: `gallery` and `.github` are under the MIT license (operator's choice).
+- 2026-11-06: `template-research-thesis` is under CC0-1.0, with `LICENSE` excluded
+  from what Copier copies (operator's choice: people fill a template in to make
+  their own specs, so they should owe no notice, and generated projects must not
+  inherit this license unasked).
 
 ## Referenced specs
 
