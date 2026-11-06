@@ -1,7 +1,7 @@
 ---
 id: TASK-004
 title: Votes and publication workflow
-status: open             # open | in_progress | blocked | done | needs_review | rejected
+status: done             # open | in_progress | blocked | done | needs_review | rejected
 parent: subrepos/gallery/main.md
 subrepo: gallery
 issue:
@@ -148,6 +148,13 @@ returns: the branch with its commit(s), and the filled Result section
 
 > Filled in by the orchestrator, one line per (re)launch.
 
+- 2026-11-06 #1: done (the coder's commit 9853784 was stamped as b779163). Review reproduced one
+  defect, fixed by the orchestrator in a separate commit, with tests failing before and passing
+  after: a bad status line, a truncated chunk or very deep JSON left a traceback, and BadStatusLine
+  quotes remote text, which must stay out of Actions logs. Review also compared `fetch_votes` with
+  `reactionGroups` on 93 real public Discussions of giscus/giscus (no mismatch, two with a 👍),
+  and seven mutations of publish.yml each failed its tests.
+
 ## Result
 
 > Filled in by the executor, **always**, even on failure: set `status` to
@@ -155,8 +162,41 @@ returns: the branch with its commit(s), and the filled Result section
 
 ### Outcome
 
+Done, one commit `9853784` on `task/004-publish` (not pushed).
+
+Checks, real results:
+- `uv sync`: ok.
+- `uv run pytest`: 272 passed (the repo's earlier tests plus the new ones).
+- `uv run ruff check .`: all checks passed.
+- `uvx --from actionlint-py actionlint .github/workflows/publish.yml`: exit 0, no finding.
+- `GITHUB_TOKEN="$(gh auth token)" uv run python -m gallery.votes --output <scratch>/votes.json`: exit 0 against the real API. The output is `{"generated_at": ..., "templates": {}}`: no Discussion exists yet, so every id is absent (expected).
+- The `run` commands of publish.yml, extracted from the YAML and run in order from the worktree into a scratch dir (`RUNNER_TEMP`=scratch, `--output _site` redirected to the scratch dir): install, detect (2/2 ok, real clones), jq check, votes (real API, token via `gh auth token`), build (2 pages). All exit 0. The jq step was also run on a detected.json with only failed entries (prints `::error::`, exit 1) and on an empty registry (exit 0).
+- Not checkable here: the real Actions run (checkout, setup actions, upload/deploy of Pages, the `github.token` permissions `discussions: read`, `actions/*@v5` of upload-pages-artifact and deploy-pages, which actionlint accepts). The first publish proves those. With a real Discussion present, only the offline tests and a local server cover the counting; the real API run returned zero Discussions.
+
+Design notes:
+- `votes.py`: transport signature `(body: bytes, token: str) -> (status, bytes)`, injected into `main(argv, transport)` and `fetch_votes`. Default `post_graphql` uses urllib with an opener whose redirect handler returns None, so a 3xx surfaces as an HTTPError status and is treated as a failure. The response is read with an 8 MiB cap (my addition, same all-or-nothing rule). `MAX_PAGES = 20`, `REQUEST_TIMEOUT = 30`.
+- Registry ids come from `load_registry`; site config from `gallery.build.load_site_config` (not modified), falling back to the packaged `site.yml` like build does. Output written with `detect.write_output` (atomic, sorted keys); `generated_at` has detect's format.
+- Exit codes: 2 for local problems (missing token, unreadable registry or site.yml, cannot write), 1 for any API failure. No file is written on any failure.
+- Every node of every page is checked (title, url prefix, count), not only the matching ones, so one malformed foreign Discussion fails the run.
+- Workflow data dir is `$RUNNER_TEMP/gallery-data` (outside `_site`); the detect step does `mkdir -p` first, since detect does not create the directory. The `runner` context is not available in job-level `env`, hence `$RUNNER_TEMP` in the shell.
+- Tests: offline FakeTransport plus real local `ThreadingHTTPServer` for: redirect not followed and token not resent to the target (server records no request), real timeout, round trip header. Token and remote text absent from stdout/stderr are checked on success and on each failure.
+
 ### Artifacts produced
+
+- `src/gallery/votes.py`
+- `tests/test_votes.py`
+- `tests/test_publish_workflow.py`
+- `.github/workflows/publish.yml`
+- `.gitignore` (adds `_site/`)
 
 ### Opinion / concerns
 
+- Strict validation of foreign Discussions means a single malformed node (in practice impossible from GitHub) blocks all publication until the next run; consistent with the contract's "a missing field" rule, but worth knowing.
+- The cron `17 */6 * * *` plus `push` on `main` both deploy; with `cancel-in-progress: false` runs queue, which is fine.
+- `.nojekyll` is written by build but dropped by upload-pages-artifact@v5, as the contract says; left alone.
+- The jq check lets an empty registry pass (zero entries), as specified.
+- The Result of the real-API run is only a zero-vote document; the counting against real Discussions is unproven until the operator enables Discussions and one exists.
+
 ### CLARIFICATION NEEDED
+
+None.
