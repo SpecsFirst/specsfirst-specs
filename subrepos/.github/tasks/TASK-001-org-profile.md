@@ -1,7 +1,7 @@
 ---
 id: TASK-001
 title: Organization profile page
-status: open             # open | in_progress | blocked | done | needs_review | rejected
+status: done             # open | in_progress | blocked | done | needs_review | rejected
 parent: subrepos/.github/main.md
 subrepo: .github
 issue:
@@ -77,8 +77,24 @@ returns: the branch with its commit, and the filled Result section
 
 ### Outcome
 
+Wrote `profile/README.md` (30 lines): one-line definition from the global goal,
+gallery link as main call to action, the real entry `dev-studio-specs-template.yml`
+verbatim as a 5-line YAML block (validated against `template.schema.json` with
+jsonschema, and byte-identical to the entry file), links to CONTRIBUTING.md and the
+gallery repo. Checks pass (file exists, 30 <= 40 lines). Gallery feature claims
+(filters, sort by votes/update, vote/comment, any forge, auto-detection) come
+from `subrepos/gallery/main.md`. Branch `task/001-org-profile`, one commit
+`docs: add organization profile README`.
+
 ### Artifacts produced
 
+- `profile/README.md` (in worktree `/home/omni/specfirst/.worktrees/dotgithub-org-profile`)
+
 ### Opinion / concerns
+
+- The profile links to `CONTRIBUTING.md` and the gallery site, which are produced by
+  `gallery` tasks: the links are dead until those land.
+- The sample entry points to a gitlab.inria.fr repo (as required: real entry); fine,
+  and it shows the "any forge" point.
 
 ### CLARIFICATION NEEDED
