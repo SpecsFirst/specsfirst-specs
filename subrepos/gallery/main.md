@@ -75,6 +75,10 @@ Project-wide decisions are in `../../architecture.md` (ADR-001 to ADR-005).
 - 2026-11-06: an entry with `ref` gets `copier copy --vcs-ref <ref> <url> <name>`.
   Copier cannot target a subfolder of a remote URL, so an entry with `path` gets
   `git clone <url> <name>-src && copier copy <name>-src/<path> <name>` instead.
+- 2026-11-06: a publish fails, and the live site stays as it is, when no template at all
+  could be fetched or when the votes cannot be read. Both point at a broken runner or API,
+  and publishing would blank every page's data or the ranking. One template failing alone
+  still publishes, with that page showing the entry's own fields.
 
 ## Operator setup
 
@@ -87,6 +91,8 @@ Repository settings that agents do not change:
    Done 2026-11-06.
 4. Pull requests: merge commits only, head branches deleted. Done 2026-11-06, on all
    four repos.
+5. Rulesets on `main`: Organization admin on the bypass list, "For pull requests only".
+   Done 2026-11-06, on all four repos. See `../../conventions.md` § Protected branches.
 
 ## giscus configuration
 

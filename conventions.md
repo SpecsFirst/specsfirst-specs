@@ -53,6 +53,12 @@ changes only through a pull request merged by the operator. This includes this s
 repo, so the orchestrator commits task specs on a branch `specs/<slug>`, pushes it before
 launching a coder, and opens one pull request per coherent batch.
 
+Each repo's ruleset enables "Restrict updates", which blocks pull request merges too, unless
+the actor is on the bypass list. Organization admin is on that list, in the mode "For pull
+requests only": the operator confirms the bypass on each merge, direct pushes stay refused,
+and the agent account, with write access only, cannot merge. A new repo needs the same bypass
+entry, or its pull requests cannot be merged.
+
 A `Task` trailer points at a commit of that branch. It stays valid only if the pull
 request is merged with a **merge commit**: a squash or a rebase would break the link.
 
