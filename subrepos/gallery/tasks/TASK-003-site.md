@@ -1,7 +1,7 @@
 ---
 id: TASK-003
 title: Static site
-status: needs_review          # open | in_progress | blocked | done | needs_review | rejected
+status: done             # open | in_progress | blocked | done | needs_review | rejected
 parent: subrepos/gallery/main.md
 subrepo: gallery
 issue:
