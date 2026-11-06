@@ -85,7 +85,8 @@ Repository settings that agents do not change:
    only giscus and maintainers can create threads). Done 2026-11-06.
 3. Install the [giscus app](https://github.com/apps/giscus) on `SpecsFirst/gallery`.
    Done 2026-11-06.
-4. Pull requests: merge commits only, head branches deleted. **Not done yet.**
+4. Pull requests: merge commits only, head branches deleted. Done 2026-11-06, on all
+   four repos.
 
 ## giscus configuration
 
