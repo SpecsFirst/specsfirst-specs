@@ -46,6 +46,16 @@
   `Refs: <group/project>#N` when the spec has an `issue:`, so the issue
   timeline links the spec, the code commits and the MR without any API call.
 
+## Protected branches
+
+`main` is protected on every repo of this project: nobody pushes to it directly, and it
+changes only through a pull request merged by the operator. This includes this specs
+repo, so the orchestrator commits task specs on a branch `specs/<slug>`, pushes it before
+launching a coder, and opens one pull request per coherent batch.
+
+A `Task` trailer points at a commit of that branch. It stays valid only if the pull
+request is merged with a **merge commit**: a squash or a rebase would break the link.
+
 ## Audits
 
 - File: `audit/<YYYY-MM-DD>-<slug>.md`, from `audit/AUDIT-template.md`.
