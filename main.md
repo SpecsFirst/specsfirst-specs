@@ -37,13 +37,13 @@ gallery is served at <https://specsfirst.github.io/gallery/>.
 |----------|-----------|-------------------|------|
 | `gallery` | `SpecsFirst/gallery` (`../gallery`) | Registry of template entries, Actions and static site | `subrepos/gallery/main.md` |
 | `.github` | `SpecsFirst/.github` (`../.github`) | Organization storefront: the public profile page | `subrepos/.github/main.md` |
+| `template-research-thesis` | `SpecsFirst/template-research-thesis` (`../template-research-thesis`) | First template of the gallery: a specs repo kept as a lab notebook | `subrepos/template-research-thesis/main.md` |
 
 ## Open points (operator)
 
 - `https://github.com/SpecsFirst/template-research-thesis`, listed by the entry
   `research-thesis.yml`, does not exist yet and must be created. Until it does,
-  this entry stays in the "clone failed" state and shows only its own fields. Its
-  content is still to be decided.
+  this entry stays in the "clone failed" state and shows only its own fields.
 
 ## Decisions
 
