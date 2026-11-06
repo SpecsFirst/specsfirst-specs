@@ -16,7 +16,7 @@ Index and global status of all tasks. Each task is one file:
 
 | Task | Title | Status | Depends on |
 |------|-------|--------|------------|
-| TASK-001 | Generic lab-notebook skeleton | in_progress | — |
+| TASK-001 | Generic lab-notebook skeleton | done | — |
 
 ## Transient exchange
 
