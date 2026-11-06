@@ -48,6 +48,8 @@ gallery is served at <https://specsfirst.github.io/gallery/>.
 ## Decisions
 
 - 2026-11-06: `gallery` and `.github` are under the MIT license (operator's choice).
+- 2026-11-06: this specs repo is under CC0-1.0, like the template: it is mostly text
+  that people may copy freely (operator left the choice to the orchestrator).
 - 2026-11-06: `template-research-thesis` is under CC0-1.0, with `LICENSE` excluded
   from what Copier copies (operator's choice: people fill a template in to make
   their own specs, so they should owe no notice, and generated projects must not
