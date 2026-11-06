@@ -41,10 +41,13 @@ gallery is served at <https://specsfirst.github.io/gallery/>.
 ## Open points (operator)
 
 - `https://github.com/SpecsFirst/template-research-thesis`, listed by the entry
-  `research-thesis.yml`, does not exist yet. Until it does, this entry stays in
-  the "clone failed" state and shows only its own fields.
-- The license of `gallery` and `.github` is not chosen. Without one, the code is
-  public but not reusable.
+  `research-thesis.yml`, does not exist yet and must be created. Until it does,
+  this entry stays in the "clone failed" state and shows only its own fields. Its
+  license and content are still to be decided.
+
+## Decisions
+
+- 2026-11-06: `gallery` and `.github` are under the MIT license (operator's choice).
 
 ## Referenced specs
 
