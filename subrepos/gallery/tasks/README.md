@@ -17,7 +17,7 @@ Index and global status of all tasks. Each task is one file:
 | Task | Title | Status | Depends on |
 |------|-------|--------|------------|
 | TASK-001 | Registry and validation Action | in_progress | — |
-| TASK-002 | Detect template information safely | in_progress | TASK-001 |
+| TASK-002 | Detect template information safely | done | TASK-001 |
 
 ## Backlog
 
@@ -25,7 +25,8 @@ Planned tasks, one line each. The full `TASK-*.md` is written when the task is
 about to start, so its contract uses the actual outputs of its dependencies.
 
 - Static site: list, filters, sort, template page, giscus (after TASK-001)
-- Votes and `publish.yml`: `votes.json`, schedule, Pages deploy (after detect and site)
+- Votes and `publish.yml`: `votes.json`, schedule, Pages deploy, a job-level timeout, and a
+  warning when no template is ok, since detect then exits 0 (after detect and site)
 - One-page `CONTRIBUTING.md` (after the above)
 
 ## Transient exchange

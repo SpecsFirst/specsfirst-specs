@@ -1,7 +1,7 @@
 ---
 id: TASK-002
 title: Detect template information safely
-status: open             # open | in_progress | blocked | done | needs_review | rejected
+status: done             # open | in_progress | blocked | done | needs_review | rejected
 parent: subrepos/gallery/main.md
 subrepo: gallery
 issue:
@@ -135,6 +135,12 @@ returns: the branch with its commit(s), and the filled Result section
 
 > Filled in by the orchestrator, one line per (re)launch.
 
+- 2026-11-06 #1: done. Review reproduced two defects, fixed by the orchestrator in a separate
+  commit, with tests failing before and passing after: `https://[bad` raised out of
+  `detect_entry` and stopped the whole run; LGPL-2.1 gave `unknown`, contrary to the Result.
+  Review also ran `path` on real GitHub and GitLab repos (blobs fetched by id work on both),
+  and 15 real license texts from the GitHub API.
+
 ## Result
 
 > Filled in by the executor, **always**, even on failure: set `status` to
@@ -142,8 +148,65 @@ returns: the branch with its commit(s), and the filled Result section
 
 ### Outcome
 
+Done. Branch `task/002-detect`, one commit `be2a816`
+("feat: add detect module fetching templates into bare repos without checkout").
+Checks: `uv sync` ok, `uv run pytest` 113 passed (79 new in `tests/test_detect.py`,
+about 9 s, offline), `uv run ruff check .` clean, and
+`uv run python -m gallery.detect --output <scratch>/detected.json` exits 0.
+
+Real registry run (network, 1.5 s): both entries `status: ok`.
+- research-thesis: license `CC0-1.0`, copier `true`, tools `[]`, commit
+  `a953a18c...`, last_update `2026-11-06T14:21:49Z`, 20 tree entries, preview 1215 chars.
+- dev-studio-specs-template: license `null` (no license file in that repo), copier `false`,
+  tools `[]`, commit `c58cc2d6...`, last_update `2026-11-03T16:06:00Z`, 14 tree entries,
+  preview 1378 chars.
+
+Design points beyond the letter of the contract:
+- Lazy fetching is disabled with the env var `GIT_NO_LAZY_FETCH=1` (git 2.43 here has no
+  `--no-lazy-fetch` option). The test fails if that variable is set to 0.
+- Path entries: the history fetch is blobless as specified, so LICENSE and `main.md` blobs
+  are absent. After resolving the tree, the module explicitly fetches only the 1 to 3 blobs
+  it needs (`fetch --filter=blob:none origin <blob sha>...`, same timeout and disk watch).
+  If the server refuses, those blobs stay absent (license/preview null or unknown).
+- The git environment is PATH, LANG, a temporary HOME, plus the fixed GIT_* settings of the
+  contract and `LC_ALL=C` (stable messages, to classify ref_not_found vs unreachable from
+  stderr, which is never published) and `GIT_LITERAL_PATHSPECS=1`.
+- Extra hardening of `invalid_entry`: a `ref` containing characters git forbids in ref names
+  (`:` would make it a refspec, `*` a pattern, plus whitespace/control chars), a path with a
+  Windows drive or backslash, a non-string field.
+- `commit` is the fetched commit (FETCH_HEAD); with `path`, `last_update` is the date of the
+  last commit touching it, so the two can differ.
+- License file names are matched case-insensitively (`license.md` works) and only a regular
+  file is read; a symlinked or unreadable license gives `"unknown"`. I also recognise
+  LGPL-2.1 (not required) because the GNU family is identified from its earliest title.
+- An unexpected internal exception in one template is contained and reported as
+  `unreachable` (the error list is closed), with the exception type logged.
+
 ### Artifacts produced
+
+- `src/gallery/detect.py` (branch `task/002-detect`, worktree
+  `/home/omni/specfirst/.worktrees/gallery-detect`)
+- `tests/test_detect.py`
+- scratch: `tasks/.exchange/tmp/task-002/detected.json` (output of the real run)
 
 ### Opinion / concerns
 
+- The contract's "path entries: blob:none, lazy fetch disabled" is self-contradictory for
+  license and preview; the explicit blob fetch above is my resolution. It relies on the
+  forge allowing a fetch by object id (GitHub and GitLab do); I could only exercise it on
+  local repos, not on a real remote with `path`, since neither registry entry has one.
+- Exit 0 when every template fails also hides a missing `git` binary or a broken runner
+  (all templates `unreachable`). The log says so, but publish.yml may want to warn when
+  zero templates are ok.
+- The closed error list has no "internal" value; mapping bugs to `unreachable` is slightly
+  misleading. Consider adding one in a later task if build wants to tell them apart.
+- Disk and timeout limits are per template and per git command; the process group is
+  killed. A repo with a 200 MB history still costs up to 120 s per command, so
+  `--jobs` times that bounds the workflow; worth a job-level timeout in publish.yml.
+- Slip, no impact: my first scratch experiment ran in the specs repo root by mistake
+  (a failed `cd` was followed by commands) and created `src/`, `b*/` there. I deleted
+  exactly those; `git status` of the specs repo shows only this task file modified.
+
 ### CLARIFICATION NEEDED
+
+None.
