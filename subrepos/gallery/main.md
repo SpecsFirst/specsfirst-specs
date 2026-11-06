@@ -80,11 +80,24 @@ Project-wide decisions are in `../../architecture.md` (ADR-001 to ADR-005).
 
 Repository settings that agents do not change:
 
-1. Pages: source "GitHub Actions".
+1. Pages: source "GitHub Actions". Done 2026-11-06.
 2. Discussions: enable, and create a category for templates (Announcement type, so
-   only giscus can create threads).
+   only giscus and maintainers can create threads). Done 2026-11-06.
 3. Install the [giscus app](https://github.com/apps/giscus) on `SpecsFirst/gallery`.
-4. Pull requests: merge commits only, head branches deleted.
+   Done 2026-11-06.
+4. Pull requests: merge commits only, head branches deleted. Done 2026-11-06, on all
+   four repos.
+
+## giscus configuration
+
+Public values, read from the GitHub API on 2026-11-06:
+
+```yaml
+repo: SpecsFirst/gallery
+repo_id: R_kgDOVlEEaQ
+category: Templates
+category_id: DIC_kwDOVlEEac4DKhwb
+```
 
 ## Code location
 
