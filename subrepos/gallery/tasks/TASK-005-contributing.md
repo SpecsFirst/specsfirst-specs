@@ -1,7 +1,7 @@
 ---
 id: TASK-005
 title: One-page contributing guide
-status: open             # open | in_progress | blocked | done | needs_review | rejected
+status: done             # open | in_progress | blocked | done | needs_review | rejected
 parent: subrepos/gallery/main.md
 subrepo: gallery
 issue:
@@ -90,6 +90,9 @@ returns: the branch with its commit(s), and the filled Result section
 
 > Filled in by the orchestrator, one line per (re)launch.
 
+- 2026-11-06 #1: done. Review replayed the guide's example through the validator (exit 0), a file
+  with nine errors (all reported at once), and read each limit against the schema and validator.
+
 ## Result
 
 > Filled in by the executor, **always**, even on failure: set `status` to
@@ -97,8 +100,45 @@ returns: the branch with its commit(s), and the filled Result section
 
 ### Outcome
 
+`CONTRIBUTING.md` added (75 lines, English), commit `263ab1a` on `task/005-contributing`.
+Sections: steps first, id rule, complete example, fields table with the real limits,
+taxonomy link and tag evolution, what a template must be, what is detected (plus the
+`main.md` and license sentence), after the merge (rebuild on push and every six hours,
+👍 through giscus), local check, one line for `uv run pytest` / `uv run ruff check .`.
+
+Checks run, real results:
+- `uv sync`: ok.
+- `uv run python -m gallery.validate` in the worktree: exit 0.
+- Example extracted from the guide with a script, copied as `templates/teaching-lab.yml`
+  into a scratch repo (schema/, taxonomy.yml, templates/) under
+  `.exchange/tmp/task-005/repo`: `validate --root` exit 0, no issue.
+- Extra: `uv run pytest` 201 passed, `uv run ruff check .` clean.
+
+Rules checked against the code: name 3-60, description 20-200, tags max 4 unique, `url`
+https with no whitespace and no credentials (validate.py), `path` relative without `..`,
+`ref` not starting with `-`, `language` `^[a-z]{2}$`, other fields refused
+(`additionalProperties: false`), id regex from validate.py, `path` makes detection read the
+tree at that subfolder (detect.py `_resolve_tree`), so root of the template means root of
+its `path`.
+
 ### Artifacts produced
+
+- `/home/omni/specfirst/.worktrees/gallery-contributing/CONTRIBUTING.md` (branch
+  `task/005-contributing`, commit `263ab1a`).
 
 ### Opinion / concerns
 
+- The six-hour rebuild and the vote refresh are stated as the spec says; no publish
+  workflow exists on this branch (TASK-004), so I could not verify them. Only
+  `.github/workflows/validate.yml` is present.
+- The spec says the id comes from the file name; validate.py enforces the regex on the file
+  stem, which matches. The guide's "file name without `.yml`" is consistent.
+- `language` is not in the contract's list of fields beyond "optional fields", so I
+  included it in the table since the schema has it.
+- The URL check in the schema only requires `https://` and no whitespace; "reachable" is
+  not verified by validation, only by the scheduled fetch. The guide says so indirectly
+  (page falls back to entry fields).
+
 ### CLARIFICATION NEEDED
+
+None.

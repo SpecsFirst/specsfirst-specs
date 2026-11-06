@@ -20,7 +20,7 @@ Index and global status of all tasks. Each task is one file:
 | TASK-002 | Detect template information safely | done | TASK-001 |
 | TASK-003 | Static site | done | TASK-001 |
 | TASK-004 | Votes and publication workflow | in_progress | TASK-002, TASK-003 |
-| TASK-005 | One-page contributing guide | in_progress | TASK-001 |
+| TASK-005 | One-page contributing guide | done | TASK-001 |
 
 ## Backlog
 
