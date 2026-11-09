@@ -1,7 +1,7 @@
 ---
 id: TASK-011
 title: Agnostic templates only, placement and command in the submission
-status: open             # open | in_progress | blocked | done | needs_review | rejected
+status: done             # open | in_progress | blocked | done | needs_review | rejected
 parent: subrepos/gallery/main.md
 subrepo: gallery
 issue:
@@ -119,6 +119,13 @@ returns: the branch with its commit(s), and the filled Result section
 
 > Filled in by the orchestrator, one line per (re)launch.
 
+- 2026-11-09 #1 (opencode, deepseek-v4-flash): done, trailers ok. Review re-ran pytest (538),
+  ruff, validate, actionlint, and the form against SchemaStore's GitHub issue-forms schema:
+  the coder's `type: checkbox` with `validations` is invalid (GitHub would refuse the whole
+  form). Orchestrator fixes: `type: checkboxes` with `required: true` on the option, and the
+  test that asserted the invalid shape; CONTRIBUTING.md quotes the question exactly, gives
+  the in-repo Copier command, and its example entry drops a redundant `command`.
+
 ## Result
 
 > Filled in by the executor, **always**, even on failure: set `status` to
@@ -126,8 +133,48 @@ returns: the branch with its commit(s), and the filled Result section
 
 ### Outcome
 
+Done. The submission form and bot now require model- and provider-agnostic templates,
+ask where the specs live and for an optional install command, and refuse a repository
+that holds tool-specific files. `CONTRIBUTING.md` states the rule and recommends Copier.
+
 ### Artifacts produced
+
+Branch `task/011-agnostic-submission`, commit `f5f86e5` ("feat(submit): require
+model- and provider-agnostic templates"), on the gallery worktree:
+
+- `.github/ISSUE_TEMPLATE/submit-template.yml`: new intro text; added the "Where do the
+  specs live?" dropdown (required, "In their own repo" | "In the code repo"), the optional
+  one-line "Install command", and the required "This template is model- and
+  provider-agnostic" checkbox. Field order: url, name, description, placement, tags,
+  command, agnostic.
+- `src/gallery/detect.py`: `TOOL_MARKERS` is now exactly the refused list (`CLAUDE.md`,
+  `.claude/`, `GEMINI.md`, `.gemini/`, `.cursor/`, `.cursorrules`, `.kiro/`, `.windsurf/`,
+  `.github/copilot-instructions.md`, `.github/prompts/`); `AGENTS.md` is not a marker
+  (ADR-009).
+- `src/gallery/submit.py`: parses `placement` (mapped standalone|in-repo, refused when
+  missing/unknown), writes `command` only when filled (refused on control characters and
+  schema/validator rules), refuses an unchecked agnostic box, and refuses a repository with
+  tool-specific files (names in code spans from detect's fixed list, no propose link).
+  Entry key order: name, url, description, kind, tags, placement, command.
+- `tests/test_submit.py`, `tests/test_detect.py`: coverage for each new field, both
+  placements, command present/absent/invalid, unchecked box, tool-specific files (no link,
+  files listed) and a clean repo (link present).
+- `CONTRIBUTING.md`: "Templates must be model- and provider-agnostic" section listing the
+  refused files and recommending `AGENTS.md` and Copier; "The placement and the install
+  command" section; updated form steps.
+
+Checks: `uv run pytest` (538 passed), `uv run ruff check .` (clean),
+`uv run python -m gallery.validate` (clean). The workflow jobs/triggers are unchanged
+(submit.yml untouched). `actionlint` was not available in the environment; no workflow
+files were modified.
 
 ### Opinion / concerns
 
+`ruff format` reports pre-existing deviations in `tests/test_detect.py` (lines ~711/777),
+in code untouched by this task and not enforced by the repo's CI (`validate.yml` runs only
+`ruff check .` and `pytest`); left as-is to keep the change focused.
+
 ### CLARIFICATION NEEDED
+
+None.
+

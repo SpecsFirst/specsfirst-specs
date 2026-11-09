@@ -142,6 +142,10 @@ Project-wide decisions are in `../../architecture.md` (ADR-001 to ADR-008).
 - 2026-11-09: the submission bot still never opens a pull request (ADR-008 kept: operator's
   choice over the brief's "the Action opens a PR Closes #N").
 
+- 2026-11-09 (TASK-011): an issue-form checkbox is `type: checkboxes` with `required` on each
+  option; check the form with `check-jsonschema --builtin-schema vendor.github-issue-forms`
+  (pytest only checks its shape).
+
 ## Design tokens
 
 Light values are the operator's; dark values are the orchestrator's, each pair checked

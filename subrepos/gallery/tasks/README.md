@@ -26,7 +26,7 @@ Index and global status of all tasks. Each task is one file:
 | TASK-008 | Create each template's Discussion in the publish workflow | done | — |
 | TASK-009 | Submit a template through an issue form | done | — |
 | TASK-010 | Where specs live, and the install command | done | — |
-| TASK-011 | Agnostic templates only, placement and command in the submission | in_progress | TASK-010 |
+| TASK-011 | Agnostic templates only, placement and command in the submission | done | TASK-010 |
 
 ## Backlog
 
