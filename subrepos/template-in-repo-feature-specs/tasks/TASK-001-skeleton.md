@@ -1,7 +1,7 @@
 ---
 id: TASK-001
 title: In-repo feature specs skeleton
-status: open             # open | in_progress | blocked | done | needs_review | rejected
+status: done             # open | in_progress | blocked | done | needs_review | rejected
 parent: subrepos/template-in-repo-feature-specs/main.md
 subrepo: template-in-repo-feature-specs
 issue:
@@ -129,6 +129,11 @@ returns: the branch with its commit(s), and the filled Result section
 
 > Filled in by the orchestrator, one line per (re)launch.
 
+- 2026-11-09 #1 (Claude Sonnet subagent, parallel to gallery TASK-010 and multi-repo TASK-001):
+  done, one commit, trailers stamped by the orchestrator. Review re-ran copy into a fake code
+  repo, update after commit, Jinja and vendor greps: all pass. Awaiting operator review before
+  the repo is created on GitHub.
+
 ## Result
 
 > Filled in by the executor, **always**, even on failure: set `status` to
@@ -136,8 +141,28 @@ returns: the branch with its commit(s), and the filled Result section
 
 ### Outcome
 
+Done. Branch `task/001-skeleton`, commit `75bd38f` (`feat: add in-repo feature specs skeleton`).
+All checks passed in a scratch repo: copy adds exactly `AGENTS.md`, `.copier-answers.yml` and
+`specs/` (the fake repo's `src/` and `README.md` untouched; no `copier.yml`/`LICENSE` copied); no
+`{{`, `}}` or `{%` left; `specs/product.md` starts with `# Test product`; after committing,
+`copier update --defaults` exits 0; the vendor-word grep finds nothing. `AGENTS.md` is 24 lines,
+no other file but `README.md` exceeds 40 lines.
+
 ### Artifacts produced
+
+`.copier-answers.yml`, `AGENTS.md`, `README.md`, `copier.yml`, `specs/product.md`,
+`specs/conventions.md`, `specs/decisions/ADR-001-short-name.md`,
+`specs/features/001-example-feature/{requirements,design,tasks}.md` in the worktree.
 
 ### Opinion / concerns
 
+- `copier update` printed "No git tags found in template; using HEAD": expected until the
+  template repo gets a version tag (e.g. `v0.1.0`); worth tagging before publishing.
+- `.copier-answers.yml` is a bare filename, so with `copier update` the answers file name is
+  fixed by Copier's default; fine for a single template per repo.
+- The scratch check was first run with a mistyped path (a failed `cd`); it only produced
+  read-only output and nothing was modified. Reran correctly.
+
 ### CLARIFICATION NEEDED
+
+None.

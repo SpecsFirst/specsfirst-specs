@@ -16,7 +16,7 @@ Index and global status of all tasks. Each task is one file:
 
 | Task | Title | Status | Depends on |
 |------|-------|--------|------------|
-| TASK-001 | In-repo feature specs skeleton | open | — |
+| TASK-001 | In-repo feature specs skeleton | done | — |
 
 ## Transient exchange
 
