@@ -120,6 +120,13 @@ Project-wide decisions are in `../../architecture.md` (ADR-001 to ADR-008).
   bot, the fallback is manual creation; the category is never opened to everyone, since
   anyone could then take a future id's title first.
 
+- 2026-11-09 (TASK-007): fonts come from official sources and are committed unmodified:
+  Inter as the Latin subsets of `@fontsource/inter` 5.3.0, JetBrains Mono as the full
+  fonts of its release v2.304. The Latin subset of JetBrains Mono has no box-drawing
+  glyphs, and a fallback font of another width breaks the trees' alignment.
+- 2026-11-09 (TASK-007): `markdown-it-py` is a dev dependency only (the submission tests
+  render comments with it); the site renders no Markdown any more.
+
 ## Design tokens
 
 Light values are the operator's; dark values are the orchestrator's, each pair checked
