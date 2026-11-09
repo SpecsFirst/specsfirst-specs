@@ -146,6 +146,7 @@ returns: the branch with its commit(s), and the filled Result section
 - 2026-11-09 #1 (opencode, deepseek-v4-flash): done, one commit, trailers ok. Review re-ran
   pytest and ruff, and rendered the trees of a real detect run on both templates: identical to
   the mockups. Recursion depth is bounded by detect's 500-entry cap.
+- 2026-11-09: merged as gallery#10.
 
 ## Result
 

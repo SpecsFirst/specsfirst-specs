@@ -35,8 +35,9 @@ schedule / push on main ──> publish.yml
 - **Context:** validation, detection and page generation are small scripts. The
   agents' VM has Python and uv, but no Node.
 - **Decision:** Python 3.12 managed by uv. The site is generated with Jinja2;
-  filters and sorting are plain JavaScript, with no framework and no JS build
-  step.
+  the order is fixed at build time, and the tag filter and copy button are plain
+  JavaScript, with no framework and no JS build step (2026-11-09: sorting moved to
+  the build with the redesign).
 - **Consequences:** one language and no `node_modules`. The page must work
   without a bundler, and its JS logic stays small.
 
