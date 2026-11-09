@@ -6,7 +6,7 @@ parent: subrepos/gallery/main.md
 subrepo: gallery
 issue:
 assignee: coder
-model:
+model: anthropic/claude-sonnet-5-5
 created: 2026-11-09
 updated: 2026-11-09
 ---
