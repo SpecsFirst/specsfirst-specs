@@ -1,7 +1,7 @@
 ---
 id: TASK-010
 title: Where specs live, and the install command
-status: open             # open | in_progress | blocked | done | needs_review | rejected
+status: done             # open | in_progress | blocked | done | needs_review | rejected
 parent: subrepos/gallery/main.md
 subrepo: gallery
 issue:
@@ -131,6 +131,14 @@ returns: the branch with its commit(s), and the filled Result section
 
 > Filled in by the orchestrator, one line per (re)launch.
 
+- 2026-11-09 #1 (opencode, deepseek-v4-flash, parallel to the two template tasks): done, one
+  commit, trailers ok. `tests/helpers.py` was read-only but holds a copy of the schema:
+  the change is accepted. Review re-ran pytest (526), ruff, validate, and a build from
+  fixtures (both placements, Copier command with `my-project` and `.`). Orchestrator fix:
+  the command check also refuses bidi controls (U+202A-202E, U+2066-2069), with a test
+  that fails without it. Not checked: rendering at 390 px (no browser on the VM; the
+  headless Chromium lacks system libraries).
+
 ## Result
 
 > Filled in by the executor, **always**, even on failure: set `status` to
@@ -138,8 +146,51 @@ returns: the branch with its commit(s), and the filled Result section
 
 ### Outcome
 
+Implemented placement display, the placement filter, and the install command in the
+`gallery-placement` worktree (branch `task/010-placement`).
+
+- **Schema** (`schema/template.schema.json`): `placement` enum `[standalone, in-repo]`,
+  default `standalone`; `command` string minLength 1, maxLength 300, pattern `^[^\r\n]+$`.
+  Both optional; `required` unchanged. Mirrored in `tests/helpers.py`.
+- **Validation** (`src/gallery/validate.py`): refuses a `command` containing a control
+  character (field `command`, code `command`).
+- **Build** (`src/gallery/build.py`): `TemplateView.placement`/`placement_text` set in
+  `build_view` (missing placement = standalone). Entry `command` set early so it shows even
+  when detect failed; the Copier branch runs only when `view.command is None`, using
+  `copier_command(url, path, ref, in_repo=...)` — standalone `my-project`/`my-project-src`,
+  in-repo `.`/`../template-src`.
+- **Site**: "Lives in" is the second `dt/dd` row right after License (`_parts.html`).
+  New intro sentence and a placement segmented control (`All · Own repo · Code repo`,
+  `aria-pressed`, hidden without JS, always shown when cards exist) in `site/index.html`.
+  Cards carry `data-placement`. `site.css` adds `.filter-groups`/`.placement`; `site.js`
+  combines placement + tag filters. Copy button matched existing markup (no change needed).
+- **CONTRIBUTING.md**: documented `placement` and `command` in "Without the form" only.
+- **Tests**: updated meta-row-order, intro, tag-button-scoping, and no-JS-control tests; added
+  placement default/label/second-row/unknown-value/filter, all three command cases plus the
+  in-repo `.` and `../template-src` variants, and schema/validation tests for both fields.
+
 ### Artifacts produced
+
+- Worktree commit: `e9a732d feat(site): show placement, add placement filter and install command`
+  (11 files, +327/−42), branch `task/010-placement`.
+- Verified from fixtures (standalone+copier, in-repo+copier, with-command, neither):
+  - `stand`: `Lives in: Own repo`, `copier copy <url> my-project`
+  - `inrepo`: `Lives in: Code repo`, `copier copy <url> .`
+  - `withcmd`: `Lives in: Own repo`, command shown as-is (`&&` autoescaped) despite detect failing
+  - `neither`: `Lives in: Own repo`, no command block
+  - in-repo `path` variant clones into `../template-src` and uses `.` destination
+- All checks green: `uv run pytest` 525 passed; `uv run ruff check .` clean;
+  `uv run python -m gallery.validate` exit 0; site built from fixtures with correct output.
+- No entry under `templates/` added, removed or edited.
 
 ### Opinion / concerns
 
+- The operator's placement default (`standalone`) means existing entries render as "Own repo"
+  without edits, as intended.
+- The `command` pattern `^[^\r\n]+$` already forbids newlines in the schema; the extra
+  validate.py control-character check covers other control characters (e.g. tab, ESC) that
+  would otherwise reach the terminal copy.
+
 ### CLARIFICATION NEEDED
+
+None.
