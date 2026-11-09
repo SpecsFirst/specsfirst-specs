@@ -1,7 +1,7 @@
 ---
 id: TASK-007
 title: Redesign the site after the mockups
-status: open             # open | in_progress | blocked | done | needs_review | rejected
+status: done             # open | in_progress | blocked | done | needs_review | rejected
 parent: subrepos/gallery/main.md
 subrepo: gallery
 issue:
@@ -217,6 +217,13 @@ returns: the branch with its commit(s), the path of the built site in the scratc
 
 > Filled in by the orchestrator, one line per (re)launch.
 
+- 2026-11-09 #1 (Claude Sonnet subagent): done. Review re-ran pytest (507), ruff, validate, a
+  build from the coder's data, and the scan of the output (no third-party URL, no inline
+  script or style). One orchestrator fix in a separate commit: the coder had flagged that the
+  Latin subset of JetBrains Mono lacks the box-drawing glyphs; fontTools confirmed it, and the
+  full fonts of release v2.304 have them at the same 600 advance, so they replace it. Visual
+  check against the mockups left to the operator (no browser here).
+
 ## Result
 
 > Filled in by the executor, **always**, even on failure: set `status` to
@@ -224,8 +231,77 @@ returns: the branch with its commit(s), the path of the built site in the scratc
 
 ### Outcome
 
+Done, branch `task/007-site-redesign` (4 commits on top of `origin/main`, nothing pushed):
+
+- `6eba52c` feat(site): serve Inter and JetBrains Mono from the site itself
+- `061a50f` refactor(site): rename the giscus key to discussions and drop the tagline
+  (site.yml, build, votes, discussions and their tests; the old templates were adjusted
+  minimally so this commit builds)
+- `b6be980` feat(site): redesign the home and template pages after the mockups
+- `0afd34b` chore: move markdown-it-py to the dev dependencies
+
+Checks (all run in the worktree): `uv sync` ok; `uv run pytest` 507 passed; `uv run ruff
+check .` clean; `uv run python -m gallery.validate` exit 0; detect (2/2 ok), votes (read-only,
+`GITHUB_TOKEN="$(gh auth token)"`, 2 templates with a Discussion, 1 star each) and build run
+into the scratch dir as in publish.yml. Grep of the built site: no `giscus`, `googleapis`,
+`gstatic`, no `style="`, no inline `<script>` (also covered by tests). `discussions.py` was
+never run (not even `--dry-run`: not needed).
+
+**Built site for review:** `/home/omni/specfirst/specsfirst-specs/subrepos/gallery/tasks/.exchange/tmp/task-007/site/`
+(`index.html`, `templates/<id>/index.html`, `assets/`), built from `data/detected.json` and
+`data/votes.json` next to it. No browser here: the look is NOT visually verified.
+
+**Fonts** (untrusted data, downloaded once with curl into a fresh dir, never executed): the
+npm tarballs of `@fontsource/inter` 5.3.0 and `@fontsource/jetbrains-mono` 5.3.0 from
+`registry.npmjs.org` (sha256 `02034af8...8fd6` and `1bbea47d...0bba`), files
+`files/inter-latin-{400,500,600}-normal.woff2` and
+`files/jetbrains-mono-latin-{400,500}-normal.woff2`, copied unmodified to
+`site/assets/fonts/`. `OFL.txt` = both copyright lines (Inter Project Authors, JetBrains
+Mono Project Authors) + the OFL 1.1 text from the packages' LICENSE files (identical bodies).
+
 ### Artifacts produced
+
+- `site/base.html`, `site/index.html`, `site/template.html`, new `site/_parts.html` (macros:
+  logo, star, meta `<dl>`, tree block), `site/assets/site.css`, `site/assets/site.js`
+- `site/assets/fonts/` (5 WOFF2 + `OFL.txt`)
+- `src/gallery/build.py` (preview renderer and markdown code removed; new view model, tag
+  colors, filters, star link, date/license/source/tree/command; fonts copied to the output)
+- `site.yml` (`discussions:` key, no `tagline`), `src/gallery/votes.py`,
+  `src/gallery/discussions.py`, `tests/test_votes.py`, `tests/test_discussions.py` (key rename)
+- `tests/test_build.py` rewritten (62 test functions, 507 tests in the suite)
+- `pyproject.toml`, `uv.lock`
 
 ### Opinion / concerns
 
+1. **markdown-it-py is not removed, it moves to the dev group.** `tests/test_submit.py`
+   (TASK-009, outside this task's scope) imports `markdown_it` to check that the submission
+   comment is inert Markdown. Removing the dependency entirely would break the suite; the
+   runtime dependency is gone (the site no longer uses it). If you want it fully removed,
+   `test_submit.py` needs a different check (a task of its own).
+2. **Box-drawing characters are not in the Latin subset** of JetBrains Mono (nor are `↗`,
+   `←`, `✓`, which Inter's Latin subset lacks too). The tree's `├── │ └──` therefore render in
+   the `ui-monospace` fallback, exactly as on the mockups served by Google Fonts (same
+   subsets). Alignment depends on the visitor's fallback font; worth a look in the review.
+   Including U+2500-257F would mean a custom subset (not an official file).
+3. **Colors that are not tokens in the mockups** (`--term-border`, `--term-icon`, hover
+   `#2F41C0`, `rgba(255,255,255,.06)`): replaced with `color-mix()` of tokens (accent/text
+   and term-text over transparent). A test asserts every hex in `site.css` is a token or one
+   of the six palette colors and that the tokens equal main.md's table.
+4. **Gaps the contract leaves open, my choices:** (a) a tag not in `taxonomy.yml` (shown as
+   is, e.g. a typo) gets color `c0` and is last in the filter; (b) a detect `failed` whose
+   `error` is not in `ERROR_REASONS` shows "File tree unavailable: the analysis failed."
+   (the contract only lists the known reasons and "not analysed yet"); (c) dates use the
+   UTC day of `last_update`; (d) the focusable `<pre>` and the command line carry
+   `role="region"` + `aria-label` so the focus ring lands on a named element; (e)
+   `SiteConfig.contributing_url` was removed (no footer any more), `submit_url` is a property.
+5. **40 px targets:** nav links, brand, filters, star and copy are real 40 px boxes; the card
+   title and the Source link, being inline text, get an invisible `::after` hit area of 40 px
+   height (overlapping only non-interactive neighbours). Verify visually.
+6. `CONTRIBUTING.md` (read-only here) is consistent with the new site (it already says there
+   is no preview); `architecture.md` ADR-001 still says "filters and sorting are plain
+   JavaScript": sorting is now build-time only, worth a one-word edit by the orchestrator.
+
 ### CLARIFICATION NEEDED
+
+None blocking. Only item 1 (markdown-it-py kept as a dev dependency) deviates from the
+contract's "remove markdown-it-py".
