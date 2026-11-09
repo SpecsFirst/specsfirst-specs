@@ -155,11 +155,11 @@ Repository settings that agents do not change:
 5. Rulesets on `main`: Organization admin on the bypass list, "For pull requests only".
    Done 2026-11-06, on all four repos. See `../../conventions.md` § Protected branches.
 6. Label `submission` on `SpecsFirst/gallery` (the issue form applies it only if it
-   exists; it only routes issues to `submit.yml`). For TASK-009.
+   exists; it only routes issues to `submit.yml`). Done 2026-11-09.
 7. Keep "Allow GitHub Actions to create and approve pull requests" off (organization
    policy, 2026-11-09): nothing in the gallery needs it. Settings → Actions → General →
-   "Approval for running fork pull request workflows from contributors": at least the
-   default (first-time contributors). For TASK-009.
+   "Approval for running fork pull request workflows from contributors": "Require
+   approval for first-time contributors". Done 2026-11-09.
 8. Check that `github-actions[bot]` can create a Discussion in the Templates category
    (Announcement type: only maintainers create threads there). The first publish after
    TASK-008 shows it; if it fails, change the category type to "Open-ended discussion"
