@@ -4,7 +4,7 @@ status: active           # draft | active | completed | archived
 version: 0.1.0
 owner: aduvermy
 created: 2026-11-06
-updated: 2026-11-06
+updated: 2026-11-09
 tags: [specs, templates, gallery, agents]
 ---
 
@@ -49,8 +49,13 @@ gallery is served at <https://specsfirst.github.io/gallery/>.
   their own specs, so they should owe no notice, and generated projects must not
   inherit this license unasked).
 
+- 2026-11-09: redesign of the gallery (operator brief and mockups, kept in
+  `subrepos/gallery/design/`): cards with full file trees, stars as 👍 on Discussions
+  without giscus, submission through an issue form. See ADR-006 to ADR-008.
+
 ## Referenced specs
 
 - `subrepos/gallery/main.md` — the gallery
+- `subrepos/gallery/design/` — the gallery's mockups and logo
 - `subrepos/.github/main.md` — the organization profile
 - `architecture.md` — decisions and data contracts

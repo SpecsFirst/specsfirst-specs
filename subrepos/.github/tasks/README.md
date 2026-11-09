@@ -18,6 +18,16 @@ Index and global status of all tasks. Each task is one file:
 |------|-------|--------|------------|
 | TASK-001 | Organization profile page | done | — |
 
+## Backlog
+
+Planned tasks, one line each. The full `TASK-*.md` is written when the task is
+about to start.
+
+- Profile after the gallery redesign (once gallery TASK-007 and TASK-009 are merged): stars
+  instead of "vote or comment", no sort or kind filter, "Submit a template" pointing to the
+  issue form; the logo of `../../gallery/design/logo.svg` as organization avatar is an
+  operator setting.
+
 ## Transient exchange
 
 Intermediate exchange between orchestrator and coders goes in
