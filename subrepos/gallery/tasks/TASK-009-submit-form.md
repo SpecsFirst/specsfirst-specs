@@ -199,6 +199,8 @@ returns: the branch with its commit(s), and the filled Result section
   passed), ruff, validate and actionlint, read the workflow (no write but `issues: write` on one
   step, no `${{` in scripts, comment found only among the bot's own) and the escaping. The
   browser check of the propose link is left to the operator (no browser here).
+- 2026-11-09: the operator opened the propose link: file name and content prefilled. Merged as
+  gallery#8.
 
 ## Result
 

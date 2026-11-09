@@ -24,7 +24,7 @@ Index and global status of all tasks. Each task is one file:
 | TASK-006 | Render the file tree like `tree` | open | — |
 | TASK-007 | Redesign the site after the mockups | open | TASK-006 |
 | TASK-008 | Create each template's Discussion in the publish workflow | open | TASK-007 |
-| TASK-009 | Submit a template through an issue form | needs_review | — |
+| TASK-009 | Submit a template through an issue form | done | — |
 
 ## Backlog
 
