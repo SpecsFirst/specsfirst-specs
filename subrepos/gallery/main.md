@@ -110,6 +110,11 @@ Project-wide decisions are in `../../architecture.md` (ADR-001 to ADR-008).
 - 2026-11-09: the Copier command uses `my-project` instead of `<name>`, so it can be
   pasted as is.
 
+- 2026-11-09 (TASK-009): `validate.entry_issues()` returns the issues of one entry, each with
+  optional `field` and `code`, so the submission comment uses fixed sentences and never
+  quotes the validator's messages (they contain user values). A closed issue produces no
+  comment.
+
 ## Design tokens
 
 Light values are the operator's; dark values are the orchestrator's, each pair checked

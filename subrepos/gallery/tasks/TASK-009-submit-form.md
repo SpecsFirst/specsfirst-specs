@@ -1,7 +1,7 @@
 ---
 id: TASK-009
 title: Submit a template through an issue form
-status: open             # open | in_progress | blocked | done | needs_review | rejected
+status: done             # open | in_progress | blocked | done | needs_review | rejected
 parent: subrepos/gallery/main.md
 subrepo: gallery
 issue:
@@ -195,6 +195,11 @@ returns: the branch with its commit(s), and the filled Result section
 
 > Filled in by the orchestrator, one line per (re)launch.
 
+- 2026-11-09 #1 (Claude Sonnet subagent, parallel to TASK-006): done. Review re-ran pytest (412
+  passed), ruff, validate and actionlint, read the workflow (no write but `issues: write` on one
+  step, no `${{` in scripts, comment found only among the bot's own) and the escaping. The
+  browser check of the propose link is left to the operator (no browser here).
+
 ## Result
 
 > Filled in by the executor, **always**, even on failure: set `status` to
@@ -202,8 +207,128 @@ returns: the branch with its commit(s), and the filled Result section
 
 ### Outcome
 
+Done. Three commits on `task/009-submit-form` (not pushed):
+
+- `7f48bd5` refactor(validate): expose the issues of one entry
+- `bec456b` feat(submit): check a template submitted through an issue form
+- `b98a0ac` docs: lead CONTRIBUTING with the submission form
+
+Checks (all in the worktree):
+
+- `uv sync`: ok.
+- `uv run pytest`: 412 passed (about 137 new, in `tests/test_submit.py`, `tests/test_submit_workflow.py`, two in `tests/test_validate.py`).
+- `uv run ruff check .`: all checks passed.
+- `uv run python -m gallery.validate`: exit 0.
+- `uvx --from actionlint-py actionlint .github/workflows/submit.yml`: no finding, exit 0.
+- Operator check, not done: open the propose link of case 1 in a browser logged in to GitHub and see the prefilled file.
+- `python -m gallery.submit check` on three fake events (real run, network, detect not stubbed; the events and outputs are in `tasks/.exchange/tmp/task-009/`):
+
+
+**1. New public repo (https://github.com/SpecsFirst/.github), CRLF body**
+
+```json
+{"issue": 11, "ok": true, "id": "specsfirst-community-files"}
+```
+
+Comment:
+
+> <!-- gallery-submission -->
+> ## Your template is ready to propose
+> 
+> The checks pass. This is the entry that will be added:
+> 
+> ```yaml
+> name: SpecsFirst community files
+> url: https://github.com/SpecsFirst/.github
+> description: Default community health files of the SpecsFirst organization, for everyone.
+> kind: software
+> tags: [multi-repo]
+> ```
+> 
+> Detected from the repository:
+> 
+> - License: `MIT`
+> - Last update: `2026-11-06T14:20:00Z`
+> - Copier support: no
+> - Files: `1 directory, 2 files`
+> 
+> To propose it:
+> 
+> 1. [Open the propose link](https://github.com/SpecsFirst/gallery/new/main?filename=templates/specsfirst-community-files.yml&value=name%3A%20SpecsFirst%20community%20files%0Aurl%3A%20https%3A%2F%2Fgithub.com%2FSpecsFirst%2F.github%0Adescription%3A%20Default%20community%20health%20files%20of%20the%20SpecsFirst%20organization%2C%20for%20everyone.%0Akind%3A%20software%0Atags%3A%20%5Bmulti-repo%5D%0A).
+> 2. Click **Commit changes…**, then **Propose changes**.
+> 3. In the pull request description, keep or add `Closes #11`.
+> 
+> A maintainer reviews and merges the pull request.
+
+
+**2. Url of a listed entry (with trailing slash)**
+
+```json
+{"issue": 12, "ok": false, "id": null}
+```
+
+Comment:
+
+> <!-- gallery-submission -->
+> ## The template cannot be proposed yet
+> 
+> - **Repository URL**: this repository is already listed as `research-thesis`.
+> 
+> Edit this issue to fix them: the check runs again.
+
+
+**3. Unknown tag, `@octocat`, two kinds, bad url, short description**
+
+```json
+{"issue": 13, "ok": false, "id": null}
+```
+
+Comment:
+
+> <!-- gallery-submission -->
+> ## The template cannot be proposed yet
+> 
+> - **Tags**: not in the taxonomy: `bogus`, `@octocat`. Valid kinds: `research`, `software`, `data`. Valid tags: `thesis`, `teaching`, `multi-repo`, `bench`, `sensitive-data`, `open-science`, `security`.
+> - **Tags**: use exactly one kind, not 2 (`research`, `software`).
+> - **Repository URL**: must be a public address starting with `https://`, without spaces.
+> - **One-line description**: must have 20 to 200 characters.
+> 
+> Edit this issue to fix them: the check runs again.
+
+
+Propose link of case 1 (for the operator's browser check):
+
+`https://github.com/SpecsFirst/gallery/new/main?filename=templates/specsfirst-community-files.yml&value=name%3A%20SpecsFirst%20community%20files%0Aurl%3A%20https%3A%2F%2Fgithub.com%2FSpecsFirst%2F.github%0Adescription%3A%20Default%20community%20health%20files%20of%20the%20SpecsFirst%20organization%2C%20for%20everyone.%0Akind%3A%20software%0Atags%3A%20%5Bmulti-repo%5D%0A`
+
+Design notes:
+
+- `validate.entry_issues(entry, path, taxonomy, schema)` returns the issues of one entry. `Issue` got two optional fields, `field` and `code`, so `submit.py` words each problem as a fixed sentence and never reuses a validator message (those quote user values). The CLI output is unchanged.
+- The entry is written to a temp dir as `templates/<id>.yml`, read back with `load_entry`, compared with what was built, then validated: a YAML mismatch is an internal failure (exit 1), never a wrong entry.
+- A body over 64 KiB is refused with a problem (not truncated). A closed issue prints nothing to stdout and writes no `submission.json`; `check` then outputs `found` unset and the `comment` job is skipped.
+- The log prints only our own words (`submit: issue #N: ok|K problem(s)`), no issue content.
+- Workflow: `check` outputs `found`; `comment` runs only when it is `true`. `comment` validates the artifact with `jq -e` (string, starts with the marker, at most 60 000 characters) before the token step, takes the issue number from the event file, and finds the bot's earlier comment among those authored by `github-actions[bot]` that start with the marker.
+- Tests parse the hostile comments with markdown-it-py (already a dependency) and assert no raw HTML (except the marker), image, foreign link or mention appears outside code.
+
 ### Artifacts produced
+
+- `.github/ISSUE_TEMPLATE/submit-template.yml`
+- `.github/workflows/submit.yml`
+- `src/gallery/submit.py`
+- `src/gallery/validate.py` (adds `entry_issues`, `Issue.field`, `Issue.code`)
+- `tests/test_submit.py`, `tests/test_submit_workflow.py`, `tests/test_validate.py` (2 tests)
+- `CONTRIBUTING.md`
+- Scratch: `tasks/.exchange/tmp/task-009/` (3 events, 3 outputs)
 
 ### Opinion / concerns
 
+- A user who is not the author of the repository can submit it; nothing proves ownership. The maintainer review of the pull request is the control. Fine for a gallery, worth knowing.
+- The bot can be made to fetch any public https URL (bounded by detect's timeout and size limits, no token in the environment). Detect treats it as hostile (ADR-002), so I see no new exposure.
+- `edited` fires on title edits too, so each edit re-runs a clone; concurrency with cancel-in-progress bounds that to one run per issue.
+- Operator setup 6 (label `submission`) must exist for the form to apply it; `submit.yml` does nothing without it. It is marked done in `main.md`.
+- The propose link for `GITHUB_REPOSITORY` defaults to `SpecsFirst/gallery`; a fork running the workflow gets its own repository, which is intended.
+- `site/index.html` still says "A pull request with one small file, see CONTRIBUTING.md." (TASK-006/007 own `site/`): worth updating to mention the form once those merge.
+- `ruff format` was not applied to old files (the repo is not formatted with it); only new files were formatted.
+
 ### CLARIFICATION NEEDED
+
+None.
