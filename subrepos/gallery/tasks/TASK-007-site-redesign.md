@@ -6,7 +6,7 @@ parent: subrepos/gallery/main.md
 subrepo: gallery
 issue:
 assignee: coder
-model:
+model: anthropic/claude-sonnet-5-5
 created: 2026-11-09
 updated: 2026-11-09
 ---
@@ -37,7 +37,10 @@ Read, in the specs repo:
 The build (`src/gallery/build.py`) already merges each entry with `detected.json` and
 `votes.json`; adapt it, do not rewrite it. `votes.json` already carries `discussion_url`
 per id; build ignores it today. The tree comes from `gallery.tree.render_tree` (TASK-006,
-merged before this task starts).
+merged). TASK-008 (merged) added `src/gallery/discussions.py`, which reads `site.giscus` like
+votes: the key rename covers both. TASK-009 (merged) added the issue form
+`.github/ISSUE_TEMPLATE/submit-template.yml`, the target of the Submit button, and its
+`submit.py`, which this task does not touch.
 
 No browser here: the look is reviewed by the orchestrator against the mockups. Give the
 reviewer the built site in the scratch dir (Result: its path).
