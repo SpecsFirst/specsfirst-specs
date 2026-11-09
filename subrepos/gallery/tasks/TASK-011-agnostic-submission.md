@@ -6,7 +6,7 @@ parent: subrepos/gallery/main.md
 subrepo: gallery
 issue:
 assignee: coder
-model: <set by the orchestrator>
+model: albert/deepseek-v4-flash-0731
 created: 2026-11-09
 updated: 2026-11-09
 ---
