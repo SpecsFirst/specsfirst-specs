@@ -48,6 +48,11 @@ standalone, kind software, tag multi-repo, CC0-1.0.
 - 2026-11-09: the answers file is a plain `.copier-answers.yml` rendered from
   `_copier_answers`, so `copier update` works.
 
+- 2026-11-09 (TASK-001): `_exclude` anchors `/LICENSE` and `/README.md`: Copier matches
+  gitignore-style, so a bare `README.md` also dropped the task boards.
+- 2026-11-09 (TASK-001): the title goes into the front matter as `{{ project_title | tojson }}`,
+  valid YAML for any title.
+
 ## Code location
 
 - **Remote:** git@github.com:SpecsFirst/template-multi-repo-specs.git (not created yet)
