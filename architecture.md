@@ -168,6 +168,21 @@ schedule / push on main ──> publish.yml
   author does one more click than with a bot pull request. The id, license, date, Copier
   and tree are still never typed by the author.
 
+### ADR-009: Templates must be model- and provider-agnostic
+
+- **Status:** accepted
+- **Date:** 2026-11-09
+- **Context:** the gallery lists specs for humans and any agent. A template that ships files
+  for one agent tool ties its users to that tool and its provider.
+- **Decision:** a submitted repository is refused when it holds one of these root-relative
+  paths: `CLAUDE.md`, `.claude/`, `GEMINI.md`, `.gemini/`, `.cursor/`, `.cursorrules`,
+  `.kiro/`, `.windsurf/`, `.github/copilot-instructions.md`, `.github/prompts/`. `AGENTS.md`
+  is the agnostic entry point and is allowed. The list is `detect.TOOL_MARKERS`, so detect's
+  `tools` lists the tool-specific files found. The submitter also ticks a required box. The
+  bot comments the list of files found and gives no propose link.
+- **Consequences:** a pull request written by hand is only checked by the maintainer's
+  review; the publish workflow does not unlist an entry that adds such files later.
+
 ## Repository / module structure
 
 ```
@@ -197,7 +212,7 @@ gallery/
       "error": null,
       "license": "MIT",
       "copier": true,
-      "tools": ["AGENTS.md", "CLAUDE.md"],
+      "tools": ["CLAUDE.md"],
       "last_update": "2026-10-01T09:30:00Z",
       "commit": "<full sha>",
       "tree": ["main.md", "subrepos/"],
