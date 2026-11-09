@@ -1,7 +1,7 @@
 ---
 id: TASK-008
 title: Create each template's Discussion in the publish workflow
-status: open             # open | in_progress | blocked | done | needs_review | rejected
+status: done             # open | in_progress | blocked | done | needs_review | rejected
 parent: subrepos/gallery/main.md
 subrepo: gallery
 issue:
@@ -141,6 +141,12 @@ returns: the branch with its commit(s), and the filled Result section
 
 > Filled in by the orchestrator, one line per (re)launch.
 
+- 2026-11-09 #1 (Claude Sonnet subagent, parallel to TASK-006): done. Review re-ran pytest,
+  ruff, actionlint and the real `--dry-run` (2 Discussions already present, created by giscus).
+  Two orchestrator fixes in separate commits: the body sentence was split by a newline the
+  spec's wrapping had put in it (GitHub renders it as a line break), and the job now runs on
+  `refs/heads/main` only, since `workflow_dispatch` can target any branch.
+
 ## Result
 
 > Filled in by the executor, **always**, even on failure: set `status` to
@@ -148,8 +154,48 @@ returns: the branch with its commit(s), and the filled Result section
 
 ### Outcome
 
+Done on branch `task/008-discussions`, two commits:
+
+- `refactor(votes): expose the Discussion listing and the GraphQL post` - extracted from
+  `votes.py`: `post_checked` (status/size/JSON checks), `list_discussions` (all pages,
+  checked nodes), and made public `split_repo`, `site_config_path`, `malformed`.
+  `fetch_votes` is now built on `list_discussions`; behaviour and `test_votes.py` unchanged
+  (59 tests pass untouched).
+- `feat(discussions): create each template's Discussion before the build` -
+  `src/gallery/discussions.py`, `tests/test_discussions.py` (41 tests), new `discussions`
+  job in `publish.yml` (first; `build` has `needs: discussions` and
+  `if: ${{ !cancelled() }}`), `tests/test_publish_workflow.py` updated.
+
+Checks: `uv sync` ok; `uv run pytest` 457 passed; `uv run ruff check .` clean;
+`actionlint publish.yml` clean; `GITHUB_TOKEN="$(gh auth token)" uv run python -m
+gallery.discussions --dry-run` -> exit 0, "would create 0, 2 already present, 0 left for
+the next run" (the two templates already have a Discussion). No mutation was ever sent to
+the real API.
+
+Output: `created <id> <url>` / `would create <id>` on stdout; a summary line on stderr.
+Dry run also respects `MAX_CREATE`. Exit codes: 2 for token/config, 1 for API failures.
+
 ### Artifacts produced
+
+- `src/gallery/discussions.py`, `tests/test_discussions.py`
+- `src/gallery/votes.py` (shared helpers extracted), `.github/workflows/publish.yml`,
+  `tests/test_publish_workflow.py`
 
 ### Opinion / concerns
 
+- The body quotes the description line by line (`> ` on each line) so a multi-line
+  description cannot leave the quote; identical to the spec for one line. I also apply the
+  `@` -> `@&#8203;` escape to the template name (spec says description only): a name may
+  contain `@user` too. Urls are left alone, since escaping would break the link.
+- `workflow_dispatch` can be started on any branch by someone with write access, and the
+  `discussions` job then reads that branch's registry. Not in scope; a job-level
+  `if: github.ref == 'refs/heads/main'` would close it (the build job has the same
+  exposure today).
+- Item 8 of Operator setup (can `github-actions[bot]` create a Discussion in the
+  Announcement-type category?) is still unverified: only the first real publish shows it.
+- The code reads `site.giscus[...]` in one place (`discussions.main`); TASK-007's key
+  rename touches that line and `votes.main`.
+
 ### CLARIFICATION NEEDED
+
+None.
