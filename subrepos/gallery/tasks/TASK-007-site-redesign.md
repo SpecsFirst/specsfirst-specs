@@ -48,7 +48,7 @@ reviewer the built site in the scratch dir (Result: its path).
 repo: /home/omni/specfirst/gallery
 worktree: /home/omni/specfirst/.worktrees/gallery-site-redesign
 branch: task/007-site-redesign
-depends_on: [TASK-006]
+depends_on: [TASK-006, TASK-008]
 inputs:
   - /home/omni/specfirst/specsfirst-specs/subrepos/gallery/design/index.html
   - /home/omni/specfirst/specsfirst-specs/subrepos/gallery/design/template.html
@@ -63,6 +63,8 @@ scope:
     - site/assets/fonts/       # WOFF2 files and OFL.txt
     - src/gallery/build.py
     - src/gallery/votes.py     # only the rename of the site.yml key (see contract)
+    - src/gallery/discussions.py   # idem
+    - tests/test_discussions.py    # idem
     - site.yml
     - tests/test_build.py
     - tests/test_votes.py      # only the rename of the site.yml key
@@ -130,7 +132,7 @@ contract:
       to a template's forge only when the url is https (existing `_is_https`), with
       `rel="nofollow noopener noreferrer"`.
     - `site.yml`: the key `giscus` becomes `discussions` (same four fields); `tagline` is
-      removed; `load_site_config` and `votes.py` read the new key. Build adds
+      removed; `load_site_config`, `votes.py` and `discussions.py` read the new key. Build adds
       `submit_url = <repo_url>/issues/new?template=submit-template.yml`.
   view:
     - Tags shown = the entry's `kind` first, then its resolved tags (existing

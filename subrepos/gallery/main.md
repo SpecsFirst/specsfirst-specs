@@ -115,6 +115,11 @@ Project-wide decisions are in `../../architecture.md` (ADR-001 to ADR-008).
   quotes the validator's messages (they contain user values). A closed issue produces no
   comment.
 
+- 2026-11-09: the publish workflow creates each template's Discussion (operator's choice,
+  option A of ADR-006, over creating them by hand). If the Announcement category refuses the
+  bot, the fallback is manual creation; the category is never opened to everyone, since
+  anyone could then take a future id's title first.
+
 ## Design tokens
 
 Light values are the operator's; dark values are the orchestrator's, each pair checked

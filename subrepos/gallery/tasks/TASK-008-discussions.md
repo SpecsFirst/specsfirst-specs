@@ -6,7 +6,7 @@ parent: subrepos/gallery/main.md
 subrepo: gallery
 issue:
 assignee: coder
-model:
+model: anthropic/claude-sonnet-5-5
 created: 2026-11-09
 updated: 2026-11-09
 ---
@@ -30,8 +30,12 @@ Read `architecture.md` ADR-004 (title rule, oldest counts) and ADR-006 (this job
 `src/gallery/votes.py` already lists every Discussion of the category with GraphQL, with a
 strict, all-or-nothing reading, an injected transport, no redirect followed and the token
 never logged. Reuse it (extract what you need into shared functions of `votes.py`); do not
-duplicate the HTTP or the page-checking code. TASK-007 renamed the `site.yml` key to
-`discussions` (fields `repo`, `repo_id`, `category`, `category_id`).
+duplicate the HTTP or the page-checking code. Read the configuration exactly as votes does
+(`load_site_config`, today under the `site.yml` key `giscus`): TASK-007, which runs after this
+task, renames that key for votes and discussions together. Do not touch `site.yml` or
+`build.py`.
+
+TASK-009 (merged) added `submit.yml` and `src/gallery/submit.py`; they are unrelated.
 
 You must not create real Discussions: the operator's first publish does. Against the real API,
 run only `--dry-run`.
@@ -42,7 +46,7 @@ run only `--dry-run`.
 repo: /home/omni/specfirst/gallery
 worktree: /home/omni/specfirst/.worktrees/gallery-discussions
 branch: task/008-discussions
-depends_on: [TASK-007]
+depends_on: []
 inputs:
   - src/gallery/votes.py
   - tests/test_votes.py
@@ -57,10 +61,9 @@ scope:
     - tests/test_votes.py           # only if the extraction requires it
     - .github/workflows/publish.yml
     - tests/test_publish_workflow.py
-    - site.yml                      # add `url`
-    - src/gallery/build.py          # only to accept the new `url` key in load_site_config
-    - tests/test_build.py           # idem
   read_only:
+    - site.yml
+    - src/gallery/build.py
     - src/gallery/registry.py
     - src/gallery/detect.py
     - taxonomy.yml
@@ -85,13 +88,13 @@ artifacts:
   - tests/test_discussions.py
   - .github/workflows/publish.yml
   - tests/test_publish_workflow.py
-  - site.yml
 contract:
   command:
     - `python -m gallery.discussions [--root DIR] [--dry-run]`. Token from GITHUB_TOKEN only,
       as votes. Ids, names, descriptions and urls from `load_registry`; repo, repo_id and
-      category_id from the `discussions` mapping of site.yml; the gallery's base url from a
-      new top-level `url: https://specsfirst.github.io/gallery/` in site.yml.
+      category_id from site.yml, read as votes reads them; the gallery's base url derived
+      from the repo: `https://<owner lowercased>.github.io/<name>/` (so
+      `https://specsfirst.github.io/gallery/`).
     - Lists the Discussions of the category with votes' query and checks; an id is missing
       when no Discussion has exactly that title.
     - For each missing id, in id order, runs exactly:
@@ -100,7 +103,7 @@ contract:
         Star **<name>** by reacting with 👍 to this post. One GitHub account, one star; the
         gallery counts them every few hours.
 
-        <description>
+        > <description, with every `@` written `@&#8203;` so it mentions no one>
 
         - Gallery page: <url>templates/<id>/
         - Source: <entry url>
