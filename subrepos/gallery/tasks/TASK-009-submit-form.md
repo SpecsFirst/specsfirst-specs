@@ -18,9 +18,10 @@ updated: 2026-11-09
 
 ## Goal
 
-Let anyone submit a template by filling a GitHub issue form: an Action checks the repository,
-writes `templates/<id>.yml`, opens the pull request "Closes #N", and comments on the issue
-with the link or with clear errors. Update `CONTRIBUTING.md` to lead with the form.
+Let anyone submit a template by filling a GitHub issue form: an Action checks the repository
+and comments on the issue with the entry and a one-click link to propose
+`templates/<id>.yml` from the author's fork, or with clear errors. The bot never writes to the
+repository. Update `CONTRIBUTING.md` to lead with the form.
 
 ## Context
 
@@ -79,6 +80,8 @@ checks:
   - uv run ruff check .
   - uv run python -m gallery.validate
   - uvx --from actionlint-py actionlint .github/workflows/submit.yml
+  - the propose link of the first case, opened by the orchestrator in a browser logged in
+    to GitHub, shows the prefilled file (not checkable by the coder)
   - uv run python -m gallery.submit check on three fake event files in the scratch dir
     (a new public repo such as https://github.com/SpecsFirst/.github; the url of an
     entry already listed; a body with an unknown tag and a bad url): show the three
@@ -132,14 +135,21 @@ contract:
       `kind`, `tags` in this order, `tags` omitted when empty, flow-style list), then
       validated in place with the registry's own checks, then detected with
       `detect_entry` (no token in the environment).
-    - Writes `<out>/submission.json` (format of architecture.md) and, when ok,
-      `<out>/templates/<id>.yml`. Exit 0 in both cases; non-zero only for an internal
-      failure (bad event file, unreadable form).
-    - Comment (Markdown): when ok, the entry in a fenced yaml block (fence longer than any
-      backtick run inside), then the detected license, last update, Copier yes/no and the
-      tree summary line; when not ok, a list of the problems, each a fixed sentence naming
-      the field. User values only ever appear inside code spans or the fenced block, with
-      `@` and `<` unable to act (code blocks do that); never in a heading or a link.
+    - Writes `<out>/submission.json` (format of architecture.md). Exit 0 whether the
+      submission is ok or not; non-zero only for an internal failure (bad event file,
+      unreadable form).
+    - Comment (Markdown, at most 60 000 characters): a hidden marker
+      `<!-- gallery-submission -->` first; when ok, the entry in a fenced yaml block (fence
+      longer than any backtick run inside), the detected license, last update, Copier
+      yes/no and the tree summary line, then the steps: 1. open the propose link,
+      2. "Commit changes…" then "Propose changes", 3. in the pull request description keep
+      or add `Closes #N`. When not ok, a list of the problems, each a fixed sentence naming
+      the field, and "edit this issue to fix them: the check runs again". User values only
+      ever appear inside code spans or the fenced block; never in a heading or link text.
+    - Propose link: `https://github.com/<repo>/new/main?filename=templates/<id>.yml&value=`
+      + the entry YAML, both percent-encoded with `urllib.parse.quote(..., safe="")` for the
+      value; `<repo>` from `GITHUB_REPOSITORY`, default `SpecsFirst/gallery`. Only our own
+      id (pattern-checked) and our own YAML go in it.
   workflow (`.github/workflows/submit.yml`):
     - `on: issues: types: [opened, edited]`; jobs run only if the issue has the label
       `submission`. Top-level `permissions: {}`. `concurrency` group per issue number,
@@ -148,22 +158,19 @@ contract:
       false; setup-uv, setup-python, `uv sync --frozen` as validate.yml; run
       `gallery.submit check --event "$GITHUB_EVENT_PATH"` with no token in env; upload
       the out dir with actions/upload-artifact@v4 (short retention).
-    - Job `propose`: `needs: check`, permissions `contents: write`, `pull-requests: write`,
-      `issues: write`; checkout of `main`; download the artifact; validate `entry_file`
-      against `^templates/[a-z0-9]+(-[a-z0-9]+)*\.yml$` before use; then
-        - ok: branch `submission/<N>` (created from main, or the existing one fetched),
-          remove the `templates/*.yml` files the branch added earlier, add the new one,
-          commit as github-actions[bot] ("Add template <id> (#N)"), push without force;
-          `gh pr create --base main --head submission/<N>` with the json's `title` and a
-          body = comment + "Closes #N", or `gh pr edit` when the pull request exists;
-          comment on the issue with the pull request link;
-        - not ok: comment on the issue with the errors, no branch.
-      Text goes through `--body-file` / `--title` from files or env, never through `${{ }}`
-      inside `run:`. `GH_TOKEN: ${{ github.token }}` only on the steps that call gh or push.
+    - Job `comment`: `needs: check`, permissions exactly `issues: write`, no checkout, runs
+      no repository code. Downloads the artifact, takes the issue number from the event
+      file (not from the artifact), and posts the comment from `submission.json` with
+      `gh issue comment <N> --repo "$GITHUB_REPOSITORY" --body-file <file>`. On `edited`,
+      it updates the bot's previous comment (the one with the marker, found with `gh api`)
+      instead of adding one. `GH_TOKEN: ${{ github.token }}` on that step only.
+    - No job has `contents: write` or `pull-requests: write`; nothing pushes, nothing opens
+      a pull request. Text goes through files or env, never through `${{ }}` inside `run:`.
   contributing:
     - CONTRIBUTING.md leads with the form (link
       `https://github.com/SpecsFirst/gallery/issues/new?template=submit-template.yml`): what
-      to fill, what happens next (pull request, review, merge, Discussion, stars). The manual
+      to fill, what happens next (bot comment, propose link, your pull request with
+      `Closes #N`, checks, merge by a maintainer, Discussion, stars). The manual
       pull request stays as a short second section with the fields table. The giscus
       paragraph becomes stars on the Discussion (👍, GitHub account, refreshed every 6 h).
       Detected list: license, `copier.yml`, last update, file tree (no preview, no tools).
@@ -175,10 +182,12 @@ contract:
       variants, schema errors all reported, detect failure (detect stubbed), YAML output
       byte for byte.
     - Comment: hostile values (`@user`, `<img>`, backticks, `](javascript:`, `::error::`)
-      stay inert.
+      stay inert; marker present; size cap; propose link decodes back to the exact
+      filename and YAML.
     - Workflow: parsed YAML asserts triggers, label condition, permissions per job, token
-      only where listed, no `${{` inside any `run:`, persist-credentials false in check,
-      the entry_file pattern check, no `--force`.
+      only on the comment step, no `${{` inside any `run:`, persist-credentials false in
+      check, no checkout in comment, no `contents: write` / `pull-requests: write` anywhere,
+      no `git push` and no `gh pr` in the file.
 returns: the branch with its commit(s), and the filled Result section
 ```
 

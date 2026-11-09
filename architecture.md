@@ -11,10 +11,12 @@ reactions on one GitHub Discussion per template.
 
 ```
 issue (form submit-template.yml, label submission) ──> submit.yml
-   check   (read-only)  ──> submission.json + templates/<id>.yml   (detect one entry)
-   propose (write)      ──> branch submission/<N>, pull request "Closes #N", issue comment
+   check   (contents: read)  ──> submission.json   (validate + detect one entry)
+   comment (issues: write)   ──> one bot comment: the entry, or the errors,
+                                 and a link that proposes the file from a fork
 
-pull request ──> validate.yml ──> taxonomy.yml + schema + templates/*.yml
+pull request (from the author's fork) ──> validate.yml ──> taxonomy.yml + schema + templates/*.yml
+   merged by the operator only (ruleset on main)
 
 schedule / push on main ──> publish.yml
    discussions (write)  ──> one Discussion per registry id, created if missing
@@ -145,22 +147,25 @@ schedule / push on main ──> publish.yml
 - **Date:** 2026-11-09
 - **Context:** opening a pull request with a YAML file is a barrier for many authors. An
   issue form is easier, but its text comes from anyone, and the repository to check is
-  chosen by them (ADR-002).
-- **Decision:** `submit.yml` runs on `issues: [opened, edited]` with the label `submission`.
-  Job `check` has `contents: read` only and no token in the environment of its steps: it
-  parses the issue body from the event file (never through `${{ }}` in a script), builds
-  the entry, validates it with the registry's validator, and runs detect on that one entry
-  (reachability, plus the license, Copier and tree shown to the reviewer). It hands over
-  `submission.json` and the entry file as an artifact. Job `propose` has `contents: write`,
-  `pull-requests: write` and `issues: write`, runs only the gallery's own code from `main`,
-  never a template: it commits the entry on `submission/<N>`, opens or updates the pull
-  request ("Closes #N"), and comments on the issue with the link or the errors. The id,
-  license, date, Copier and tree are never typed by the author.
-- **Consequences:** a pull request opened with the `GITHUB_TOKEN` triggers no workflow, so
-  `validate.yml` does not run on it by itself; the `check` job has validated the entry, and
-  a maintainer who wants the checks on the pull request closes and reopens it. The
-  operator allows Actions to create pull requests (repository setting). Updates to the
-  branch are new commits, never a force-push.
+  chosen by them (ADR-002). The organization does not let Actions create pull requests
+  (operator, 2026-11-09), and the gallery must not become a place where a bot writes on
+  behalf of strangers.
+- **Decision:** the bot never writes to the repository: no branch, no commit, no pull
+  request. `submit.yml` runs on `issues: [opened, edited]` when the issue has the label
+  `submission` (put by the form; it routes, it does not authorize). Job `check` has
+  `contents: read` only and no token in the environment of its steps: it parses the issue
+  body from the event file (never through `${{ }}` in a script), builds the entry,
+  validates it with the registry's validator, and runs detect on that one entry. Job
+  `comment` has `issues: write` only, checks out nothing and runs no repository code: it
+  posts (or updates) one comment, made by `check`, with the entry and what was detected,
+  or the list of problems. When the entry is valid, the comment carries a link to GitHub's
+  "new file" page, prefilled with `templates/<id>.yml`: the author clicks it, GitHub forks
+  the repository for them, and they open the pull request themselves ("Closes #N").
+- **Consequences:** every change to `main` is a pull request from someone's fork, checked
+  by `validate.yml` with a read-only token, and merged by the operator (ruleset). A token
+  that can only comment on issues is the whole write surface of the submission. The
+  author does one more click than with a bot pull request. The id, license, date, Copier
+  and tree are still never typed by the author.
 
 ## Repository / module structure
 
@@ -218,18 +223,15 @@ no license file is `null`.
 The build treats a missing file or a missing id as "no data", never as an error.
 
 `submission.json`, written by `python -m gallery.submit` in the `check` job of
-`submit.yml`, read by its `propose` job (the entry file travels next to it):
+`submit.yml`, read by its `comment` job:
 
 ```json
 {
   "issue": 12,
   "ok": true,
   "id": "teaching-lab",
-  "entry_file": "templates/teaching-lab.yml",
-  "title": "Add template: Teaching lab notebook",
-  "comment": "<Markdown for the issue comment and the pull request body>"
+  "comment": "<Markdown of the issue comment, propose link included>"
 }
 ```
 
-With `ok: false`, `id` and `entry_file` are `null`, no entry file is written, and `comment`
-lists every problem found.
+With `ok: false`, `id` is `null` and `comment` lists every problem found.
