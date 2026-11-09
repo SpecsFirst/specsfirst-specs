@@ -146,6 +146,7 @@ returns: the branch with its commit(s), and the filled Result section
   Two orchestrator fixes in separate commits: the body sentence was split by a newline the
   spec's wrapping had put in it (GitHub renders it as a line break), and the job now runs on
   `refs/heads/main` only, since `workflow_dispatch` can target any branch.
+- 2026-11-09: merged as gallery#9.
 
 ## Result
 
