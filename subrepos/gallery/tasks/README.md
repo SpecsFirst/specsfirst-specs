@@ -21,14 +21,22 @@ Index and global status of all tasks. Each task is one file:
 | TASK-003 | Static site | done | TASK-001 |
 | TASK-004 | Votes and publication workflow | done | TASK-002, TASK-003 |
 | TASK-005 | One-page contributing guide | done | TASK-001 |
+| TASK-006 | Render the file tree like `tree` | open | — |
+| TASK-007 | Redesign the site after the mockups | open | TASK-006 |
+| TASK-008 | Create each template's Discussion in the publish workflow | open | TASK-007 |
+| TASK-009 | Submit a template through an issue form | open | — |
 
 ## Backlog
 
 Planned tasks, one line each. The full `TASK-*.md` is written when the task is
 about to start, so its contract uses the actual outputs of its dependencies.
 
-- `giscus.json` restricting `origins` to the site, so that other sites cannot create threads in
-  the category. More than 2000 threads would fail the publish (`MAX_PAGES` in `votes.py`).
+- More than 2000 Discussions would fail the publish (`MAX_PAGES` in `votes.py`).
+- Drop `tools` and `preview` from detect and `detected.json` once the redesign is live: the
+  site no longer shows them (one less blob fetched per template).
+
+Order: TASK-006 → TASK-007 → TASK-008 in sequence (they share `build.py` and `site.yml`);
+TASK-009 in parallel (own files only).
 
 ## Transient exchange
 
