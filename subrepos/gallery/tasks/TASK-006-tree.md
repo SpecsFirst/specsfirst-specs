@@ -1,7 +1,7 @@
 ---
 id: TASK-006
 title: Render the file tree like `tree`
-status: open             # open | in_progress | blocked | done | needs_review | rejected
+status: done             # open | in_progress | blocked | done | needs_review | rejected
 parent: subrepos/gallery/main.md
 subrepo: gallery
 issue:
@@ -143,6 +143,10 @@ returns: the branch with its commit(s), and the filled Result section
 
 > Filled in by the orchestrator, one line per (re)launch.
 
+- 2026-11-09 #1 (opencode, deepseek-v4-flash): done, one commit, trailers ok. Review re-ran
+  pytest and ruff, and rendered the trees of a real detect run on both templates: identical to
+  the mockups. Recursion depth is bounded by detect's 500-entry cap.
+
 ## Result
 
 > Filled in by the executor, **always**, even on failure: set `status` to
@@ -150,8 +154,38 @@ returns: the branch with its commit(s), and the filled Result section
 
 ### Outcome
 
+Implemented `src/gallery/tree.py` with `render_tree(paths: Sequence[str]) -> RenderedTree`
+(frozen dataclass: `text`, `directories`, `files`, `summary` property), pure and
+deterministic. Added `tests/test_tree.py` (12 tests). Verified byte-for-byte against the
+research-thesis reference from the real `python -m gallery.detect` list. All checks pass:
+`uv sync`, `uv run pytest` (287 passed), `uv run ruff check .` (clean).
+
+The reference check: built a local git repo of `template-research-thesis` and ran detect
+into the scratch dir; detect produced the 20-entry `tree` list which `render_tree` turns
+into exactly the `LC_ALL=C tree` text in the task spec (`6 directories, 14 files`). That
+exact detect list and text are hardcoded in the tests, and an integration test re-runs
+detect→render on a git repo with the research-thesis structure and asserts equality.
+
 ### Artifacts produced
 
+- `src/gallery/tree.py` (new)
+- `tests/test_tree.py` (new)
+- Commit `a90c627` on branch `task/006-tree` in worktree
+  `/home/omni/specfirst/.worktrees/gallery-tree`
+- Scratch: `python -m gallery.detect` list and rendering verified in
+  `.exchange/tmp/opencode/`
+
 ### Opinion / concerns
+
+- `tree` is not installed in this environment (no sudo), so the reference was taken from
+  the task spec and matched byte-for-byte; the algorithm (prefix `│   `/`    `, connectors
+  `├── `/`└── `, byte-order sort, singular/plural summary) follows `tree` exactly.
+- Sorting uses `name.encode("utf-8")` byte comparison to match `LC_ALL=C`; Python `bytes`
+  compare lexicographically by unsigned byte value, which equals C-locale byte order.
+- Hostile inputs (empty/`.`/`..` segments, duplicates, control chars) are handled; a name
+  that appears as both file and directory is not defined by the spec — detect never
+  produces it, and it is resolved defensively (promoted to a directory).
+- The worktree branch `task/006-tree` is behind `origin/main` (4 commits); the commit is
+  on top of the branch point, ready for the orchestrator to integrate.
 
 ### CLARIFICATION NEEDED
