@@ -1,7 +1,7 @@
 ---
 id: TASK-012
 title: Stop pinning the entry count in tests, clarify the placement question
-status: open             # open | in_progress | blocked | done | needs_review | rejected
+status: done             # open | in_progress | blocked | done | needs_review | rejected
 parent: subrepos/gallery/main.md
 subrepo: gallery
 issue:
@@ -70,7 +70,31 @@ returns: the branch with its commit(s), and the filled Result section
 
 > Filled in by the orchestrator, one line per (re)launch.
 
+- 2026-11-10 #1 (orchestrator, claude-opus-5-5): done directly, two one-line changes.
+
 ## Result
 
 > Filled in by the executor, **always**, even on failure: set `status` to
 > `done` or `blocked` before exiting. Do not delete the contract above.
+
+### Outcome
+
+Done. Branch `task/012-entry-count-and-placement-hint`, commits `58b7ab0` (test) and
+`36091a9` (form hint).
+
+- `tests/test_registry.py`: `len(registry.entries)` is compared with the `templates/*.yml`
+  files on disk.
+- `submit-template.yml`: the placement hint reads "In a project made from your template,
+  are the specs a repository of their own, or a folder inside the code repository?".
+
+Checks: `uv run pytest` 538 passed, also with the entries of pull requests #14 and #16
+applied; `ruff check` clean; the form is valid against SchemaStore's issue-forms schema.
+
+### Opinion / concerns
+
+Pull request #14 says `placement: standalone` for an in-repo template (issue #13 picked
+"In their own repo"): the entry needs `placement: in-repo` before merge.
+
+### CLARIFICATION NEEDED
+
+None.
