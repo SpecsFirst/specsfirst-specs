@@ -46,10 +46,13 @@ correct on mobile).
   Discussion in `SpecsFirst/gallery`, created by the publish workflow after the merge.
   Not the stars of the template's repository: templates may live on GitLab. One GitHub
   account counts once; no anonymous vote. Counts are read at build time.
-- Home page: header, intro, one tag filter (client side), and a grid of cards sorted by
-  stars, then by latest update. Each card shows its metadata and its full file tree.
-- Template page: the same card, alone, plus the `copier copy <url> my-project` command
-  when a `copier.yml` exists.
+- Home page: header, intro, a placement filter and one tag filter (client side, combined),
+  and a grid of cards sorted by stars, then by latest update. Each card shows its metadata
+  (License, Lives in, Updated, Source, Tags) and its full file tree.
+- Template page: the same card, alone, plus the install command: the entry's `command`,
+  else `copier copy <url> my-project` (standalone) or `copier copy <url> .` (in-repo) when a
+  `copier.yml` exists.
+- Only model- and provider-agnostic templates are listed (ADR-009).
 - The look is set by the mockups in `design/` (see `design/README.md`).
 
 **Deliverables:** the Actions, the site, and a one-page `CONTRIBUTING.md`.
@@ -126,6 +129,22 @@ Project-wide decisions are in `../../architecture.md` (ADR-001 to ADR-008).
   glyphs, and a fallback font of another width breaks the trees' alignment.
 - 2026-11-09 (TASK-007): `markdown-it-py` is a dev dependency only (the submission tests
   render comments with it); the site renders no Markdown any more.
+
+- 2026-11-09 (operator brief): `placement: standalone | in-repo` says where a template's
+  specs live. Optional in the schema with default standalone (operator's choice over a
+  required field, so the existing entries stay untouched); the form and the bot always ask
+  for it. Shown as "Lives in": "Own repo" | "Code repo", second meta row. Filtered with a
+  segmented control All · Own repo · Code repo, combined with the tag filter. No
+  `standalone` or `in-repo` tag.
+- 2026-11-09 (operator brief): optional `command` field, shown as is; else the Copier
+  command, with `.` as destination for in-repo; else no command block. It is pasted into
+  terminals: one line, no control character, and the maintainer reviews it.
+- 2026-11-09: the submission bot still never opens a pull request (ADR-008 kept: operator's
+  choice over the brief's "the Action opens a PR Closes #N").
+
+- 2026-11-09 (TASK-011): an issue-form checkbox is `type: checkboxes` with `required` on each
+  option; check the form with `check-jsonschema --builtin-schema vendor.github-issue-forms`
+  (pytest only checks its shape).
 
 ## Design tokens
 

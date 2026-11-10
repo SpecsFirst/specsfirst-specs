@@ -22,9 +22,11 @@ Index and global status of all tasks. Each task is one file:
 | TASK-004 | Votes and publication workflow | done | TASK-002, TASK-003 |
 | TASK-005 | One-page contributing guide | done | TASK-001 |
 | TASK-006 | Render the file tree like `tree` | done | — |
-| TASK-007 | Redesign the site after the mockups | needs_review | TASK-006, TASK-008 |
+| TASK-007 | Redesign the site after the mockups | done | TASK-006, TASK-008 |
 | TASK-008 | Create each template's Discussion in the publish workflow | done | — |
 | TASK-009 | Submit a template through an issue form | done | — |
+| TASK-010 | Where specs live, and the install command | done | — |
+| TASK-011 | Agnostic templates only, placement and command in the submission | done | TASK-010 |
 
 ## Backlog
 
@@ -36,11 +38,11 @@ about to start, so its contract uses the actual outputs of its dependencies.
 - More than 2000 Discussions would fail the publish (`MAX_PAGES` in `votes.py`).
 - Drop `markdown-it-py` completely: `tests/test_submit.py` is its last user (checks that
   comments render inert); replace that check or keep the dev dependency on purpose.
-- Drop `tools` and `preview` from detect and `detected.json` once the redesign is live: the
-  site no longer shows them (one less blob fetched per template).
+- Drop `preview` from detect and `detected.json`: the site no longer shows it (one less blob
+  fetched per template). `tools` stays: since TASK-011 it lists tool-specific files.
 
-Order: TASK-006 and TASK-008 in parallel (no shared file), then TASK-007 (it renames the
-`site.yml` key for build, votes and discussions).
+Order: TASK-010, then TASK-011 on its branch; one pull request for both (operator: one PR
+for the gallery changes).
 
 ## Transient exchange
 
