@@ -28,7 +28,7 @@ Index and global status of all tasks. Each task is one file:
 | TASK-010 | Where specs live, and the install command | done | — |
 | TASK-011 | Agnostic templates only, placement and command in the submission | done | TASK-010 |
 | TASK-012 | Stop pinning the entry count in tests, clarify the placement question | done | — |
-| TASK-013 | Read-only static API and `llms.txt` | in_progress | — |
+| TASK-013 | Read-only static API and `llms.txt` | done | — |
 
 ## Backlog
 
@@ -40,6 +40,8 @@ about to start, so its contract uses the actual outputs of its dependencies.
 - More than 2000 Discussions would fail the publish (`MAX_PAGES` in `votes.py`).
 - Drop `markdown-it-py` completely: `tests/test_submit.py` is its last user (checks that
   comments render inert); replace that check or keep the dev dependency on purpose.
+- `api.py` imports private helpers of `build.py`, and `build()` imports `api` lazily to
+  avoid the cycle: move the shared helpers to a small module if either grows.
 - Drop `preview` from detect and `detected.json`: the site no longer shows it (one less blob
   fetched per template). `tools` stays: since TASK-011 it lists tool-specific files.
 

@@ -1,7 +1,7 @@
 ---
 id: TASK-013
 title: Read-only static API and `llms.txt`
-status: in_progress      # open | in_progress | blocked | done | needs_review | rejected
+status: done      # open | in_progress | blocked | done | needs_review | rejected
 parent: subrepos/gallery/main.md
 subrepo: gallery
 issue:
@@ -138,6 +138,13 @@ returns: the branch with its commit(s), and the filled Result section
 > Filled in by the orchestrator, one line per (re)launch.
 
 - 2026-11-10 #1 (orchestrator, claude-opus-5-5): launched with run_coder.sh, default model.
+  END status=done commits=1 trailers=ok after about 75 min. Review: checks re-run (555
+  passed, ruff clean, real build validates against the schema). Accepted deviations: the
+  `llms.txt` text lives in `api.render_llms_txt`, not `site/llms.txt` (no autoescape
+  question, all URLs from `SiteConfig`); `tests/test_votes.py` and
+  `tests/test_discussions.py` gained `base_url` in their `site.yml` fixtures (they load it).
+  Orchestrator fix `696793f`: `llms.txt` links in the llmstxt.org form (`[name](url)`,
+  blank lines between blocks). The Result's sha was the pre-stamp one; corrected.
 
 ## Result
 
@@ -146,6 +153,42 @@ returns: the branch with its commit(s), and the filled Result section
 
 ### Outcome
 
+Done. Branch `task/013-static-api` (commit `4dc85ec`) adds the build-time
+write of the ADR-010 read-only API and `llms.txt`.
+
+- `site.yml` gains a required `base_url` (`https://specsfirst.github.io/gallery/`);
+  `load_site_config` validates it (https, ends with `/`, no credentials,
+  else `BuildError`).
+- `src/gallery/api.py` (new) builds the documents from the exact site build
+  values — same order via `vote_order`, skipped invalid ids, resolved tags,
+  command, stars, tree text cleaned the same way — serialized with
+  `json.dumps` only (no second version of any value).
+- `build()` calls `write_documents` (lazy import to avoid a circular import)
+  writing `api/v1/templates.json`, `api/v1/templates/<id>.json`, and
+  `llms.txt` under the output dir.
+- `site/base.html` gains the `<link rel="alternate" type="application/json">`
+  head link.
+- `schema/api-v1.schema.json` (new) is the API contract, kept in-repo (not
+  published to the site) per the spec.
+- Tests: 17 new `tests/test_api.py` covering file writes, schema validation
+  across none/failed/ok detection, values, license variants, order/stars
+  matching HTML, hostile-entry cleanup, `llms.txt` (no entry values leak),
+  head link. `test_build.py` extended for base_url; `test_votes.py`/
+  `test_discussions.py` fixtures gained `base_url`.
+
+Verification: `uv run ruff check .` clean (0 errors); `uv run pytest -q`
+555 passed (baseline was 538); real build smoke test produces
+`api/v1/templates.json`, per-id JSON, and `llms.txt` whose URLs start with
+`base_url` and whose `page`/`detail` match the site.
+
 ### Opinion / concerns
+
+- `_detection` collapses any non-ok/non-failed status to `pending`; the
+  schema allows only the three documented strings, so a malformed detected
+  status silently becomes `pending` rather than `failed`. This mirrors the
+  site's leniency; flagging in case strictness is preferred.
+- API values deliberately reuse site display text for names/descriptions/
+  tags; the spec's "same values the site shows" is honored, but the API is
+  not yet machine-friendly beyond JSON structure.
 
 ### CLARIFICATION NEEDED
