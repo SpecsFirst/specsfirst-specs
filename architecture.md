@@ -183,13 +183,31 @@ schedule / push on main ──> publish.yml
 - **Consequences:** a pull request written by hand is only checked by the maintainer's
   review; the publish workflow does not unlist an entry that adds such files later.
 
+### ADR-010: A read-only static API for agents
+
+- **Status:** accepted
+- **Date:** 2026-11-10
+- **Context:** the gallery lists specs for agent-driven projects; agents should read it
+  without scraping HTML. The site stays static (ADR-001, ADR-003).
+- **Decision:** the build also writes `api/v1/templates.json` (every listed template,
+  in home page order), `api/v1/templates/<id>.json` (one template, plus its tree and
+  file paths) and `llms.txt`. Values are those the site shows, cleaned the same way,
+  serialized with `json.dumps`. No per-file URL: a file is a path relative to the
+  template's `url`, `ref`, `path` and `commit`, since raw URLs differ per forge. The
+  contract is `schema/api-v1.schema.json` in the repo (not published on the site);
+  version `v1`, new fields only ever optional. `llms.txt` holds only the gallery's own
+  text and URLs, never an entry's value, and warns that entries are third-party data.
+  Pages link the index with `<link rel="alternate">`; no footer.
+- **Consequences:** a breaking change means `v2` beside `v1`. Agents that read entries
+  face the same untrusted content as human visitors; `command` stays reviewed at merge.
+
 ## Repository / module structure
 
 ```
 gallery/
 ├── taxonomy.yml, schema/template.schema.json, templates/<id>.yml
 ├── src/gallery/           # registry, validate, detect, votes, discussions, submit,
-│                          # tree, build
+│                          # tree, build, api
 ├── site/                  # Jinja2 templates, CSS, JS, fonts
 ├── tests/
 ├── .github/ISSUE_TEMPLATE/submit-template.yml
@@ -251,3 +269,41 @@ The build treats a missing file or a missing id as "no data", never as an error.
 ```
 
 With `ok: false`, `id` is `null` and `comment` lists every problem found.
+
+API v1, written by build under the site root (`<base>` is `base_url` of `site.yml`):
+
+```json
+// api/v1/templates.json
+{
+  "version": "v1",
+  "generated_at": "2026-11-10T12:00:00Z",
+  "templates": [
+    {
+      "id": "teaching-lab",
+      "name": "Teaching lab",
+      "description": "...",
+      "kind": "research",
+      "tags": ["thesis"],
+      "placement": "standalone",
+      "url": "https://github.com/org/repo",
+      "ref": null,
+      "path": null,
+      "detection": "ok",
+      "license": "MIT",
+      "updated": "2026-10-01T09:30:00Z",
+      "commit": "<full sha>",
+      "stars": 3,
+      "command": "copier copy https://github.com/org/repo my-project",
+      "page": "<base>templates/teaching-lab/",
+      "detail": "<base>api/v1/templates/teaching-lab.json"
+    }
+  ]
+}
+```
+
+`api/v1/templates/<id>.json` is `{"version", "generated_at", "template"}`, where
+`template` has the same fields plus `tree` (the text shown on the page, or `null`),
+`files` (file paths, directories excluded, dot-entries included, relative to the
+template root) and `truncated`. With `detection` `"failed"` or `"pending"` (no data),
+`license`, `updated`, `commit` and `tree` are `null`, `files` is `[]` and `truncated`
+is `false`. Every key is always present; `null` means unknown or none.
