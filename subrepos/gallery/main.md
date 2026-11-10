@@ -5,7 +5,7 @@ status: active           # draft | active | completed | archived
 version: 0.1.0
 owner: aduvermy
 created: 2026-11-06
-updated: 2026-11-09
+updated: 2026-11-10
 tags: [gallery, github-pages, discussions]
 ---
 
@@ -53,6 +53,8 @@ correct on mobile).
   else `copier copy <url> my-project` (standalone) or `copier copy <url> .` (in-repo) when a
   `copier.yml` exists.
 - Only model- and provider-agnostic templates are listed (ADR-009).
+- A read-only JSON API (`api/v1/`) and `llms.txt`, so agents read the gallery without
+  scraping HTML (ADR-010).
 - The look is set by the mockups in `design/` (see `design/README.md`).
 
 **Deliverables:** the Actions, the site, and a one-page `CONTRIBUTING.md`.
@@ -79,7 +81,7 @@ the steps are in `../../architecture.md` § Data / interfaces.
 `taxonomy.yml`, `schema/template.schema.json` and the two initial entries were
 given by the operator and committed as they are: tasks never change them.
 
-Project-wide decisions are in `../../architecture.md` (ADR-001 to ADR-008).
+Project-wide decisions are in `../../architecture.md` (ADR-001 to ADR-010).
 
 - 2026-11-06: an entry's id matches `^[a-z0-9]+(-[a-z0-9]+)*$` (it ends up in URLs
   and Discussion titles).

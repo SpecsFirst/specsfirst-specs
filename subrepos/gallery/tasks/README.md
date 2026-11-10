@@ -28,6 +28,7 @@ Index and global status of all tasks. Each task is one file:
 | TASK-010 | Where specs live, and the install command | done | — |
 | TASK-011 | Agnostic templates only, placement and command in the submission | done | TASK-010 |
 | TASK-012 | Stop pinning the entry count in tests, clarify the placement question | done | — |
+| TASK-013 | Read-only static API and `llms.txt` | in_progress | — |
 
 ## Backlog
 
